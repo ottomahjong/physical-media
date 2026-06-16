@@ -3,40 +3,10 @@ import { Link } from "react-router-dom";
 import { fetchListings, updateListing, formatMoney, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
+import { groqRange } from "../pricing.js";
 
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const sortKey = (s) => (s || "").replace(/^(the|a|an)\s+/i, "").toLowerCase();
-
-async function groqEstimate(item) {
-  const details = [
-    `Format: ${item.type}`,
-    `Title: ${item.title || "Unknown"}`,
-    item.artist && `Artist/Studio: ${item.artist}`,
-    item.year && `Year: ${item.year}`,
-    item.media_condition && `Media: ${item.media_condition}`,
-    item.case_condition && `Case: ${item.case_condition}`,
-  ].filter(Boolean).join(", ");
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: "You are a physical media pricing expert. Respond with ONLY a short price range like '$2–5' or '$10–20' based on typical resale/thrift/eBay values. No explanation. Just the range.",
-        },
-        { role: "user", content: `Resale value: ${details}` },
-      ],
-      temperature: 0.2,
-      max_tokens: 20,
-    }),
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const data = await res.json();
-  return data.choices[0].message.content.trim();
-}
 
 const FMT_ABBR = { Cassette: "CAS", Vinyl: "VIN" };
 const fmtLabel = (t) => FMT_ABBR[t] || t || "?";
@@ -110,7 +80,7 @@ export default function Home() {
     const updated = [...items];
     for (let i = 0; i < updated.length; i++) {
       try {
-        const est = await groqEstimate(updated[i]);
+        const est = await groqRange(updated[i]);
         const saved = await updateListing(updated[i].id, { est_value: est });
         updated[i] = { ...updated[i], est_value: saved.est_value };
         setItems([...updated]);

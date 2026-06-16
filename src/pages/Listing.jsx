@@ -3,47 +3,16 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { fetchListing, updateListing, deleteListing } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
+import { groqDetail } from "../pricing.js";
 import ListingForm from "../components/ListingForm.jsx";
 
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
-async function fetchGroqValue(item) {
-  const isMint = (c) => c && (c.includes("Mint") || c.includes("NM"));
-  const mint = isMint(item.media_condition) && isMint(item.case_condition);
-
-  const details = [
-    `Format: ${item.type}`,
-    `Title: ${item.title || "Unknown"}`,
-    item.artist && `Artist/Studio: ${item.artist}`,
-    item.year && `Year: ${item.year}`,
-    item.media_condition && `Media: ${item.media_condition}`,
-    item.case_condition && `Case: ${item.case_condition}`,
-    item.notes && `Notes: ${item.notes}`,
-  ].filter(Boolean).join("\n");
-
-  const priceInstruction = mint
-    ? "This item is in mint/near-mint condition. Give the full market range including top-end collector pricing."
-    : "Give the LOW-TO-MID market price range only — what a typical thrift/yard sale buyer would realistically sell it for, not the optimistic ceiling.";
-
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `You are a physical media resale pricing expert. ${priceInstruction} Respond in under 120 words. Include the price range, key factors, and whether it's in demand.`,
-        },
-        { role: "user", content: `Market value for:\n${details}` },
-      ],
-      temperature: 0.2,
-      max_tokens: 250,
-    }),
-  });
-  if (!res.ok) throw new Error(`Groq error: ${res.status}`);
-  const data = await res.json();
-  return data.choices[0].message.content;
+// Pull the leading "$5–10" style range out of the detailed estimate so the
+// stored Est. value stays in sync with what the detail page just reported.
+function extractRange(text) {
+  const m = (text || "").match(/\$\s?\d[\d,]*(?:\.\d+)?\s*[–\-—]?\s*\$?\s?\d*[\d,]*(?:\.\d+)?/);
+  return m ? m[0].replace(/\s+/g, "") : null;
 }
 
 export default function Listing() {
@@ -80,7 +49,16 @@ export default function Listing() {
 
   async function checkValue() {
     setGroqBusy(true); setGroqError(null); setGroqResult(null);
-    try { setGroqResult(await fetchGroqValue(item)); }
+    try {
+      const text = await groqDetail(item);
+      setGroqResult(text);
+      // Keep the stored Est. value consistent with this fresh estimate.
+      const range = extractRange(text);
+      if (range && range !== item.est_value) {
+        const updated = await updateListing(id, { est_value: range });
+        setItem(updated);
+      }
+    }
     catch (e) { setGroqError(e.message); }
     finally { setGroqBusy(false); }
   }
