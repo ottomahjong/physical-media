@@ -1,7 +1,16 @@
 import { supabase } from "./supabaseClient.js";
 
 export const TYPES = ["VHS", "DVD", "CD", "Blu-ray", "Vinyl", "Other"];
-export const CONDITIONS = ["New", "Like New", "Good", "Fair", "Poor"];
+export const CONDITIONS = [
+  "Mint (M)",
+  "Near Mint (NM or M-)",
+  "Excellent (EX)",
+  "Very Good Plus (VG+)",
+  "Very Good (VG)",
+  "Good Plus (G+)",
+  "Good (G)",
+  "Not Specified",
+];
 export const STATUSES = ["Available", "Listed", "Sold"];
 
 const TABLE = "listings";

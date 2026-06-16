@@ -73,7 +73,8 @@ export default function Listing() {
           {item.artist && <p className="dsub">{item.artist}{item.year ? ` · ${item.year}` : ""}</p>}
 
           <dl className="facts">
-            {item.condition && (<><dt>Condition</dt><dd>{item.condition}</dd></>)}
+            {item.media_condition && (<><dt>Media</dt><dd>{item.media_condition}</dd></>)}
+            {item.case_condition && (<><dt>Case</dt><dd>{item.case_condition}</dd></>)}
             {item.status && (<><dt>Status</dt><dd>{item.status}</dd></>)}
             {item.quantity > 1 && (<><dt>Quantity</dt><dd>{item.quantity}</dd></>)}
             <dt>Good price</dt><dd>{good || "—"}</dd>

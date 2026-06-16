@@ -6,7 +6,8 @@ const empty = {
   title: "",
   artist: "",
   year: "",
-  condition: "Good",
+  media_condition: "Not Specified",
+  case_condition: "Not Specified",
   quantity: 1,
   used_price: "",
   good_price: "",
@@ -48,7 +49,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         title: v.title.trim(),
         artist: v.artist.trim() || null,
         year: v.year ? String(v.year).trim() : null,
-        condition: v.condition || null,
+        media_condition: v.media_condition || null,
+        case_condition: v.case_condition || null,
         quantity: Number(v.quantity) || 1,
         used_price: v.used_price === "" ? null : Number(v.used_price),
         good_price: v.good_price === "" ? null : Number(v.good_price),
@@ -107,16 +109,29 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
       <div className="grid2">
         <div>
-          <label>Condition</label>
-          <select value={v.condition || ""} onChange={set("condition")}>
+          <label>Media condition</label>
+          <select value={v.media_condition || "Not Specified"} onChange={set("media_condition")}>
             {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
           </select>
         </div>
+        <div>
+          <label>Case condition</label>
+          <select value={v.case_condition || "Not Specified"} onChange={set("case_condition")}>
+            {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid2">
         <div>
           <label>Status</label>
           <select value={v.status || ""} onChange={set("status")}>
             {STATUSES.map((s) => <option key={s}>{s}</option>)}
           </select>
+        </div>
+        <div>
+          <label>Quantity</label>
+          <input type="number" min="1" value={v.quantity ?? 1} onChange={set("quantity")} />
         </div>
       </div>
 
@@ -130,9 +145,6 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           <input type="number" step="0.01" value={v.good_price ?? ""} onChange={set("good_price")} placeholder="3" />
         </div>
       </div>
-
-      <label>Quantity</label>
-      <input type="number" min="1" value={v.quantity ?? 1} onChange={set("quantity")} />
 
       <label>Notes</label>
       <textarea rows="3" value={v.notes || ""} onChange={set("notes")} placeholder="Condition details, where it's stored, listing link, etc." />
