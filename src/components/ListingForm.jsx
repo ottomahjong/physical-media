@@ -102,9 +102,46 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     finally { setUploading(false); }
   }
 
+  // Pull an image URL out of a cross-window drag (no local file involved).
+  function extractDroppedUrl(dt) {
+    const uri = dt.getData("text/uri-list") || dt.getData("text/plain");
+    if (uri && /^https?:\/\//i.test(uri.trim())) return uri.trim();
+    const html = dt.getData("text/html");
+    if (html) {
+      const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (m && /^https?:\/\//i.test(m[1])) return m[1];
+    }
+    return null;
+  }
+
+  // Fetch a remote image and upload it to our storage. Falls back to linking
+  // the URL directly if the host blocks cross-origin fetches (CORS).
+  async function handleUrl(url) {
+    setUploading(true); setError(null);
+    try {
+      let uploaded = null;
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const blob = await res.blob();
+          if (blob.type.startsWith("image/")) {
+            const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+            uploaded = await uploadImage(new File([blob], `drop.${ext}`, { type: blob.type }));
+          }
+        }
+      } catch { /* CORS or network — fall back to the raw URL below */ }
+      setV((cur) => ({ ...cur, image_url: uploaded || url }));
+    } catch (err) {
+      setError("Couldn't load that image: " + err.message);
+    } finally { setUploading(false); }
+  }
+
   function onDrop(e) {
     e.preventDefault(); setDragOver(false);
-    handleFile(e.dataTransfer.files?.[0]);
+    const file = e.dataTransfer.files?.[0];
+    if (file) { handleFile(file); return; }
+    const url = extractDroppedUrl(e.dataTransfer);
+    if (url) handleUrl(url);
   }
 
   async function runSearch() {
