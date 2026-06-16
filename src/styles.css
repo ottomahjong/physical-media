@@ -217,11 +217,12 @@ main { max-width: 840px; margin: 0 auto; padding: 16px 16px 64px; }
   font-size: 0.52rem; font-weight: 700;
   letter-spacing: 0.06em; text-align: center; padding: 2px;
 }
-.placeholder.t-VHS   { background: var(--ti-terracotta); color: #fff; }
-.placeholder.t-DVD   { background: var(--ti-ocean);      color: #fff; }
-.placeholder.t-CD    { background: var(--ti-harakeke);   color: #fff; }
-.placeholder.t-Bluray{ background: #5b7fd4;              color: #fff; }
-.placeholder.t-Vinyl { background: var(--ti-ink);        color: var(--ti-bone); }
+.placeholder.t-VHS     { background: var(--ti-terracotta); color: #fff; }
+.placeholder.t-DVD     { background: var(--ti-ocean);      color: #fff; }
+.placeholder.t-CD      { background: var(--ti-harakeke);   color: #fff; }
+.placeholder.t-Bluray  { background: #5b7fd4;              color: #fff; }
+.placeholder.t-Vinyl   { background: #3a3a3a;              color: var(--ti-bone); }
+.placeholder.t-Cassette{ background: #6b4a9e;              color: #fff; }
 .placeholder         { background: var(--bg-sunken);     color: var(--fg-muted); }
 
 .info { min-width: 0; flex: 1; display: flex; flex-direction: column; }
@@ -383,11 +384,12 @@ input[type="checkbox"] {
   letter-spacing: 0.14em; text-transform: uppercase;
   padding: 3px 8px; border-radius: var(--radius-sm); margin-bottom: 10px;
 }
-.tag.t-VHS    { background: var(--ti-terracotta); color: #fff; }
-.tag.t-DVD    { background: var(--ti-ocean);      color: #fff; }
-.tag.t-CD     { background: var(--ti-harakeke);   color: #fff; }
-.tag.t-Bluray { background: #5b7fd4;              color: #fff; }
-.tag.t-Vinyl  { background: var(--ti-ink);        color: var(--ti-bone); }
+.tag.t-VHS      { background: var(--ti-terracotta); color: #fff; }
+.tag.t-DVD      { background: var(--ti-ocean);      color: #fff; }
+.tag.t-CD       { background: var(--ti-harakeke);   color: #fff; }
+.tag.t-Bluray   { background: #5b7fd4;              color: #fff; }
+.tag.t-Vinyl    { background: #3a3a3a;              color: var(--ti-bone); }
+.tag.t-Cassette { background: #6b4a9e;              color: #fff; }
 .detailinfo h2 {
   font-family: var(--font-display); font-size: clamp(1.3rem, 3vw, 1.8rem);
   font-weight: 350; letter-spacing: -0.02em; margin-bottom: 4px;
@@ -487,7 +489,7 @@ input[type="checkbox"] {
   border-bottom: 1px solid var(--border);
 }
 .coll-table th {
-  text-align: left;
+  text-align: center;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -496,7 +498,9 @@ input[type="checkbox"] {
   padding: 10px 12px;
   white-space: nowrap;
   background: var(--bg-sunken);
+  vertical-align: middle;
 }
+.coll-table th.col-title { text-align: left; }
 .coll-table th:first-child { border-radius: var(--radius-lg) 0 0 0; }
 .coll-table th:last-child  { border-radius: 0 var(--radius-lg) 0 0; }
 .coll-table tbody tr {
@@ -505,14 +509,16 @@ input[type="checkbox"] {
 }
 .coll-table tbody tr:last-child { border-bottom: none; }
 .coll-table tbody tr:hover { background: var(--bg-sunken); }
-.coll-table td { padding: 8px 12px; vertical-align: middle; }
-.col-thumb { width: 44px; padding: 6px 6px 6px 10px; }
-.col-thumb .thumb { margin: 0; }
-.col-title { min-width: 140px; }
-.col-type  { width: 72px; }
-.col-cond  { width: 90px; color: var(--fg-muted); font-size: 0.78rem; }
-.col-price { width: 64px; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg-muted); }
-.col-est   { width: 80px; text-align: right; font-variant-numeric: tabular-nums; }
+.coll-table td { padding: 10px 12px; vertical-align: middle; text-align: center; }
+/* Tags inside the table shouldn't carry the detail-page bottom margin */
+.coll-table .tag { margin-bottom: 0; vertical-align: middle; }
+.col-thumb { width: 52px; padding: 6px; text-align: center; }
+.col-thumb .thumb { margin: 0 auto; }
+.col-title { min-width: 150px; text-align: left; }
+.col-type  { width: 80px; }
+.col-cond  { width: 92px; color: var(--fg-muted); font-size: 0.78rem; }
+.col-price { width: 70px; font-variant-numeric: tabular-nums; color: var(--fg-muted); }
+.col-est   { width: 88px; font-variant-numeric: tabular-nums; }
 .row-title {
   display: block; font-weight: 500; color: var(--fg);
   text-decoration: none; line-height: 1.3;

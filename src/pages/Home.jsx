@@ -38,10 +38,13 @@ async function groqEstimate(item) {
   return data.choices[0].message.content.trim();
 }
 
+const FMT_ABBR = { Cassette: "CAS", Vinyl: "VIN" };
+const fmtLabel = (t) => FMT_ABBR[t] || t || "?";
+
 function Thumb({ item }) {
   if (item.image_url)
     return <img className="thumb" src={item.image_url} alt="" loading="lazy" />;
-  return <span className={"thumb placeholder t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type || "?"}</span>;
+  return <span className={"thumb placeholder t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{fmtLabel(item.type)}</span>;
 }
 
 function shortCond(c) {
@@ -210,7 +213,7 @@ export default function Home() {
                     {i.artist && <span className="row-sub">{i.artist}{i.year ? ` · ${i.year}` : ""}</span>}
                   </td>
                   <td className="col-type">
-                    <span className={"tag t-" + (i.type || "").replace(/[^A-Za-z]/g, "")}>{i.type}</span>
+                    <span className={"tag t-" + (i.type || "").replace(/[^A-Za-z]/g, "")}>{fmtLabel(i.type)}</span>
                   </td>
                   <td className="col-cond">{shortCond(i.media_condition)}</td>
                   <td className="col-cond">{shortCond(i.case_condition)}</td>
