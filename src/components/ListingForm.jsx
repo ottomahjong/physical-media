@@ -108,7 +108,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   }
 
   async function runSearch() {
-    const q = (lookupQuery || v.title).trim();
+    const q = (lookupQuery || v.title || "").trim();
     if (!q) throw new Error("Enter a title first.");
     if (MUSIC_TYPES.includes(v.type)) return searchDiscogs(q, v.type);
     if (VIDEO_TYPES.includes(v.type)) {
@@ -166,17 +166,18 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   async function submit(e) {
     e.preventDefault(); setBusy(true); setError(null);
     try {
+      const clean = (s) => (s == null ? "" : String(s)).trim() || null;
       const payload = {
-        type: v.type, title: v.title.trim() || null,
-        artist: v.artist.trim() || null,
-        year: v.year ? String(v.year).trim() : null,
-        genre: v.genre.trim() || null,
+        type: v.type, title: clean(v.title),
+        artist: clean(v.artist),
+        year: clean(v.year),
+        genre: clean(v.genre),
         media_condition: v.media_condition || null,
         case_condition: v.case_condition || null,
         quantity: Number(v.quantity) || 1,
-        paid_price: v.paid_price === "" ? null : Number(v.paid_price),
+        paid_price: v.paid_price === "" || v.paid_price == null ? null : Number(v.paid_price),
         status: v.status || "Available",
-        notes: v.notes.trim() || null,
+        notes: clean(v.notes),
         image_url: v.image_url || null,
       };
       await onSave(payload);
