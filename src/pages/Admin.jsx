@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { fetchListings, createListing, deleteListing, formatMoney, TYPES } from "../data.js";
+import { fetchListings, createListing, deleteListing, updateListing, uploadImage, formatMoney, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
@@ -125,6 +125,42 @@ export default function Admin() {
   );
   const visibleIds = rows.map((i) => i.id);
 
+  function InlineThumb({ item }) {
+    const fileRef = useRef();
+    const [uploading, setUploading] = useState(false);
+    async function pick(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setUploading(true);
+      try {
+        const url = await uploadImage(file);
+        const updated = await updateListing(item.id, { image_url: url });
+        setItems((cur) => cur.map((x) => x.id === item.id ? { ...x, image_url: updated.image_url } : x));
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      } finally {
+        setUploading(false);
+        e.target.value = "";
+      }
+    }
+    return (
+      <span
+        className="athumb athumb-upload"
+        title="Click to upload thumbnail"
+        onClick={(e) => { e.preventDefault(); fileRef.current?.click(); }}
+      >
+        {uploading ? (
+          <span className="athumb-uploading">…</span>
+        ) : item.image_url ? (
+          <img src={item.image_url} alt="" />
+        ) : (
+          <span className="athumb-empty">{item.type}<br /><span className="athumb-hint">upload</span></span>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={pick} />
+      </span>
+    );
+  }
+
   function cancelBatch() {
     setBatchMode(null);
     setBatchText("");
@@ -246,9 +282,7 @@ export default function Admin() {
               </label>
             ) : (
               <Link key={i.id} to={`/listing/${i.id}`} className="adminrow">
-                <span className="athumb">
-                  {i.image_url ? <img src={i.image_url} alt="" /> : <span>{i.type}</span>}
-                </span>
+                <InlineThumb item={i} />
                 <span className="info">
                   <span className="title">{i.title}</span>
                   <span className="by">{[i.type, i.artist, i.year].filter(Boolean).join(" · ")}</span>

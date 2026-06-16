@@ -202,16 +202,17 @@ main { max-width: 840px; margin: 0 auto; padding: 16px 16px 64px; }
 .item:hover { background: var(--bg-sunken); }
 .item:active { background: var(--ti-cream); }
 
-/* 2:3 vertical cover thumbnails */
+/* Thumbnails hug natural image height; placeholders use 2:3 */
 .thumb {
-  flex: 0 0 auto; width: 40px;
-  aspect-ratio: 2 / 3;
+  flex: 0 0 auto; width: 40px; height: auto;
   border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--bg-sunken);
   border: 1px solid var(--border);
+  display: block;
 }
 .thumb.placeholder {
+  aspect-ratio: 2 / 3;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.52rem; font-weight: 700;
   letter-spacing: 0.06em; text-align: center; padding: 2px;
@@ -312,14 +313,19 @@ textarea { resize: vertical; line-height: 1.5; }
 }
 .adminrow:hover { background: var(--bg-sunken); }
 .athumb {
-  flex: 0 0 auto; width: 34px;
-  aspect-ratio: 2 / 3;
+  flex: 0 0 auto; width: 36px;
   border-radius: var(--radius-sm); overflow: hidden;
   background: var(--bg-sunken); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.48rem; font-weight: 700; color: var(--fg-muted);
+  font-size: 0.44rem; font-weight: 700; color: var(--fg-muted);
+  min-height: 36px;
 }
-.athumb img { width: 100%; height: 100%; object-fit: cover; }
+.athumb img { width: 100%; height: auto; display: block; object-fit: cover; }
+.athumb-upload { cursor: pointer; position: relative; transition: opacity var(--dur) var(--ease); }
+.athumb-upload:hover { opacity: 0.75; }
+.athumb-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%; padding: 4px 2px; gap: 2px; }
+.athumb-hint { font-size: 0.38rem; color: var(--ti-ocean); letter-spacing: 0.04em; }
+.athumb-uploading { font-size: 0.6rem; color: var(--fg-muted); }
 .aval { flex: 0 0 auto; text-align: right; }
 .aval .good { font-size: 0.88rem; font-weight: 600; display: block; }
 .badge {
@@ -362,10 +368,10 @@ input[type="checkbox"] {
 }
 .detailimg {
   flex: 0 0 auto; width: 180px;
-  aspect-ratio: 2 / 3;
   background: var(--bg-sunken);
+  display: flex; align-items: flex-start;
 }
-.detailimg img { width: 100%; height: 100%; object-fit: cover; }
+.detailimg img { width: 100%; height: auto; display: block; }
 .detailimg .placeholder.big {
   font-family: var(--font-display); font-size: 1.2rem; font-weight: 350;
   color: var(--fg-muted); width: 100%; height: 100%;
@@ -408,11 +414,11 @@ input[type="checkbox"] {
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
 .imgrow { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 8px; }
 .imgbox {
-  width: 56px; aspect-ratio: 2 / 3;
+  width: 56px; min-height: 56px;
   border-radius: var(--radius-sm); overflow: hidden;
   border: 1px solid var(--border); background: var(--bg-sunken);
   display: flex; align-items: center; justify-content: center;
   font-size: 0.6rem; color: var(--fg-muted);
 }
-.imgbox img { width: 100%; height: 100%; object-fit: cover; }
+.imgbox img { width: 100%; height: auto; display: block; }
 .imgactions { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
