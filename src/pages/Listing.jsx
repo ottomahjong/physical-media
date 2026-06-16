@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { fetchListing, updateListing, deleteListing, formatMoney } from "../data.js";
+import { fetchListing, updateListing, deleteListing } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
@@ -8,39 +8,40 @@ import ListingForm from "../components/ListingForm.jsx";
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 async function fetchGroqValue(item) {
+  const isMint = (c) => c && (c.includes("Mint") || c.includes("NM"));
+  const mint = isMint(item.media_condition) && isMint(item.case_condition);
+
   const details = [
     `Format: ${item.type}`,
     `Title: ${item.title || "Unknown"}`,
     item.artist && `Artist/Studio: ${item.artist}`,
     item.year && `Year: ${item.year}`,
-    item.media_condition && `Media condition: ${item.media_condition}`,
-    item.case_condition && `Case condition: ${item.case_condition}`,
+    item.media_condition && `Media: ${item.media_condition}`,
+    item.case_condition && `Case: ${item.case_condition}`,
     item.notes && `Notes: ${item.notes}`,
   ].filter(Boolean).join("\n");
 
+  const priceInstruction = mint
+    ? "This item is in mint/near-mint condition. Give the full market range including top-end collector pricing."
+    : "Give the LOW-TO-MID market price range only — what a typical thrift/yard sale buyer would realistically sell it for, not the optimistic ceiling.";
+
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${GROQ_KEY}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Authorization": `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content: "You are a physical media collector and reseller expert. Given item details, provide a concise current market value estimate based on recent eBay sold listings, Discogs, and collector markets. Include a price range for 'used' and 'good/excellent' condition, note any factors affecting value, and mention if it's particularly sought after. Keep the response under 150 words.",
+          content: `You are a physical media resale pricing expert. ${priceInstruction} Respond in under 120 words. Include the price range, key factors, and whether it's in demand.`,
         },
-        {
-          role: "user",
-          content: `What is the current resale market value for this item?\n\n${details}`,
-        },
+        { role: "user", content: `Market value for:\n${details}` },
       ],
-      temperature: 0.3,
-      max_tokens: 300,
+      temperature: 0.2,
+      max_tokens: 250,
     }),
   });
-  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+  if (!res.ok) throw new Error(`Groq error: ${res.status}`);
   const data = await res.json();
   return data.choices[0].message.content;
 }
@@ -78,21 +79,14 @@ export default function Listing() {
   }
 
   async function checkValue() {
-    setGroqBusy(true);
-    setGroqError(null);
-    setGroqResult(null);
-    try {
-      const result = await fetchGroqValue(item);
-      setGroqResult(result);
-    } catch (e) {
-      setGroqError(e.message);
-    } finally {
-      setGroqBusy(false);
-    }
+    setGroqBusy(true); setGroqError(null); setGroqResult(null);
+    try { setGroqResult(await fetchGroqValue(item)); }
+    catch (e) { setGroqError(e.message); }
+    finally { setGroqBusy(false); }
   }
 
   if (loading) return <div className="empty">Loading…</div>;
-  if (error) return <div className="empty"><strong>Couldn't load this listing.</strong>{error}</div>;
+  if (error) return <div className="empty"><strong>Couldn't load this listing.</strong> {error}</div>;
   if (!item) return <div className="empty">Not found. <Link to="/">Back to the collection</Link></div>;
 
   if (editing) {
@@ -100,29 +94,19 @@ export default function Listing() {
       <div className="panel">
         <Link to="/" className="back">← Back</Link>
         <h2>Edit listing</h2>
-        <ListingForm
-          initial={item}
-          onSave={save}
-          onCancel={() => setEditing(false)}
-          onDelete={remove}
-        />
+        <ListingForm initial={item} onSave={save} onCancel={() => setEditing(false)} onDelete={remove} />
       </div>
     );
   }
-
-  const good = formatMoney(item.good_price);
-  const used = formatMoney(item.used_price);
 
   return (
     <div className="detail">
       <Link to="/" className="back">← Back to the collection</Link>
       <div className="detailcard">
         <div className="detailimg">
-          {item.image_url ? (
-            <img src={item.image_url} alt={item.title} />
-          ) : (
-            <span className="placeholder big">{item.type}</span>
-          )}
+          {item.image_url
+            ? <img src={item.image_url} alt={item.title} />
+            : <span className="placeholder big">{item.type}</span>}
         </div>
         <div className="detailinfo">
           <span className={"tag t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type}</span>
@@ -131,23 +115,18 @@ export default function Listing() {
 
           <dl className="facts">
             {item.media_condition && (<><dt>Media</dt><dd>{item.media_condition}</dd></>)}
-            {item.case_condition && (<><dt>Case</dt><dd>{item.case_condition}</dd></>)}
-            {item.status && (<><dt>Status</dt><dd>{item.status}</dd></>)}
-            {item.quantity > 1 && (<><dt>Quantity</dt><dd>{item.quantity}</dd></>)}
-            <dt>Good price</dt><dd>{good || "—"}</dd>
-            <dt>Used price</dt><dd>{used || "—"}</dd>
+            {item.case_condition  && (<><dt>Case</dt><dd>{item.case_condition}</dd></>)}
+            {item.status          && (<><dt>Status</dt><dd>{item.status}</dd></>)}
+            {item.quantity > 1    && (<><dt>Qty</dt><dd>{item.quantity}</dd></>)}
+            {item.paid_price != null && (<><dt>Paid</dt><dd>${item.paid_price}</dd></>)}
+            {item.est_value       && (<><dt>Est. value</dt><dd>{item.est_value}</dd></>)}
           </dl>
 
           {item.notes && <p className="notes">{item.notes}</p>}
 
-          {/* Groq value check — only shown when API key is configured */}
           {GROQ_KEY && (
             <div className="groq-block">
-              <button
-                className="btn ghost"
-                onClick={checkValue}
-                disabled={groqBusy}
-              >
+              <button className="btn ghost" onClick={checkValue} disabled={groqBusy}>
                 {groqBusy ? "Checking market value…" : "Check current market value"}
               </button>
               {groqError && <p className="err" style={{ marginTop: 8 }}>{groqError}</p>}
