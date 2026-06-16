@@ -9,6 +9,7 @@ const empty = {
   media_condition: "Not Specified",
   case_condition: "Not Specified",
   quantity: 1,
+  paid_price: "",
   used_price: "",
   good_price: "",
   status: "Available",
@@ -59,6 +60,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         media_condition: v.media_condition || null,
         case_condition: v.case_condition || null,
         quantity: Number(v.quantity) || 1,
+        paid_price: v.paid_price === "" ? null : Number(v.paid_price),
         used_price: v.used_price === "" ? null : Number(v.used_price),
         good_price: v.good_price === "" ? null : Number(v.good_price),
         status: v.status || "Available",
@@ -154,14 +156,20 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
       <div className="grid2">
         <div>
+          <label>Paid ($)</label>
+          <input type="number" step="0.01" value={v.paid_price ?? ""} onChange={set("paid_price")} placeholder="1" />
+        </div>
+        <div>
           <label>Used price ($)</label>
           <input type="number" step="0.01" value={v.used_price ?? ""} onChange={set("used_price")} placeholder="1" />
         </div>
+      </div>
+      <div className="grid2">
         <div>
           <label>Good price ($)</label>
           <input type="number" step="0.01" value={v.good_price ?? ""} onChange={set("good_price")} placeholder="3" />
         </div>
-      </div>
+        <div /></div>
 
       <label>Notes</label>
       <textarea rows="3" value={v.notes || ""} onChange={set("notes")}
