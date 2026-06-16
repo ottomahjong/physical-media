@@ -521,7 +521,7 @@ input[type="checkbox"] {
 .coll-table .tag { margin-bottom: 0; vertical-align: middle; }
 .col-thumb { width: 52px; padding: 6px; text-align: center; }
 .col-thumb .thumb { margin: 0 auto; }
-.col-title { min-width: 150px; text-align: left; }
+.coll-table td.col-title { min-width: 150px; text-align: left; }
 .col-type  { width: 80px; }
 .col-genre { width: 100px; color: var(--fg-muted); font-size: 0.78rem; }
 .col-cond  { width: 92px; color: var(--fg-muted); font-size: 0.78rem; }
