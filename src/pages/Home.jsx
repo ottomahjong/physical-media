@@ -194,6 +194,7 @@ export default function Home() {
                 <th></th>
                 <th>Title</th>
                 <th>Format</th>
+                <th>Genre</th>
                 <th>Media</th>
                 <th>Case</th>
                 <th>Paid</th>
@@ -215,6 +216,7 @@ export default function Home() {
                   <td className="col-type">
                     <span className={"tag t-" + (i.type || "").replace(/[^A-Za-z]/g, "")}>{fmtLabel(i.type)}</span>
                   </td>
+                  <td className="col-genre">{i.genre || "—"}</td>
                   <td className="col-cond">{shortCond(i.media_condition)}</td>
                   <td className="col-cond">{shortCond(i.case_condition)}</td>
                   <td className="col-price">{formatMoney(i.paid_price) || "$1"}</td>

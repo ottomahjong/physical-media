@@ -516,6 +516,7 @@ input[type="checkbox"] {
 .col-thumb .thumb { margin: 0 auto; }
 .col-title { min-width: 150px; text-align: left; }
 .col-type  { width: 80px; }
+.col-genre { width: 100px; color: var(--fg-muted); font-size: 0.78rem; }
 .col-cond  { width: 92px; color: var(--fg-muted); font-size: 0.78rem; }
 .col-price { width: 70px; font-variant-numeric: tabular-nums; color: var(--fg-muted); }
 .col-est   { width: 88px; font-variant-numeric: tabular-nums; }
