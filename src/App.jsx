@@ -13,7 +13,7 @@ function Header() {
     <header>
       <div className="bar">
         <Link to="/" className="brand">
-          <h1>The Collection</h1>
+          <h1>Keddy Media</h1>
           <span className="sub">VHS · DVD · CD</span>
         </Link>
         <nav>

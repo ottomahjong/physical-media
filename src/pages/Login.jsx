@@ -40,32 +40,41 @@ export default function Login() {
   }
 
   return (
-    <div className="panel" style={{ maxWidth: 400, margin: "48px auto" }}>
-      <h2>Sign in</h2>
-      <form onSubmit={submit}>
-        <label>Username</label>
-        <input
-          type="text"
-          autoComplete="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <label>Password</label>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p className="err">{error}</p>}
-        <div className="formbtns" style={{ marginTop: 20 }}>
-          <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </div>
-      </form>
+    <div style={{ maxWidth: 360, margin: "64px auto", padding: "0 16px" }}>
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 350, fontSize: "2rem", letterSpacing: "-0.02em" }}>
+          Keddy Media
+        </h1>
+        <p style={{ fontSize: "0.78rem", color: "var(--fg-muted)", marginTop: 4, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          Owner access
+        </p>
+      </div>
+      <div className="panel">
+        <form onSubmit={submit}>
+          <label>Username</label>
+          <input
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <label>Password</label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && <p className="err">{error}</p>}
+          <div style={{ marginTop: 20 }}>
+            <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
