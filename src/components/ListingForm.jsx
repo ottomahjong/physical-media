@@ -16,14 +16,29 @@ function discogsHeaders() {
   return h;
 }
 
-async function searchDiscogs(title, type) {
+async function searchDiscogs(title, type, artist) {
   const fmt = DISCOGS_FORMAT[type] || "CD";
-  const url = `https://api.discogs.com/database/search?q=${encodeURIComponent(title)}&type=release&format=${fmt}&per_page=8`;
+  const params = new URLSearchParams({ type: "release", format: fmt, per_page: "12" });
+  // Use precise fields when we know the artist so we don't match a same-named
+  // album by a different artist (e.g. "Faith" by The Cure vs Faith Hill).
+  if (artist) {
+    params.set("release_title", title);
+    params.set("artist", artist);
+  } else {
+    params.set("q", title);
+  }
+  const url = `https://api.discogs.com/database/search?${params}`;
   const res = await fetch(url, { headers: discogsHeaders() });
   if (res.status === 401) throw new Error("Discogs needs a free token (VITE_DISCOGS_TOKEN) to return matches and cover art.");
   if (!res.ok) throw new Error("Discogs search failed");
   const data = await res.json();
-  return (data.results || []).map((r) => ({
+  let results = (data.results || []);
+  // If the precise artist+title query came back empty, retry as a loose search.
+  if (!results.length && artist) {
+    const r2 = await fetch(`https://api.discogs.com/database/search?q=${encodeURIComponent(`${artist} ${title}`)}&type=release&format=${fmt}&per_page=12`, { headers: discogsHeaders() });
+    if (r2.ok) results = (await r2.json()).results || [];
+  }
+  return results.map((r) => ({
     title:  r.title?.split(" - ").slice(1).join(" - ") || r.title,
     artist: r.title?.split(" - ")[0] || "",
     year:   r.year ? String(r.year) : "",
@@ -147,12 +162,33 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   async function runSearch() {
     const q = (lookupQuery || v.title || "").trim();
     if (!q) throw new Error("Enter a title first.");
-    if (MUSIC_TYPES.includes(v.type)) return searchDiscogs(q, v.type);
+    const artist = (v.artist || "").trim();
+    if (MUSIC_TYPES.includes(v.type)) return searchDiscogs(q, v.type, artist);
     if (VIDEO_TYPES.includes(v.type)) {
       if (!OMDB_KEY) throw new Error("Add a free OMDB API key (VITE_OMDB_API_KEY) to enable VHS/DVD lookup. Get one at omdbapi.com — takes 30 seconds.");
       return searchOMDB(q, v.year);
     }
-    return searchDiscogs(q, "CD");
+    return searchDiscogs(q, "CD", artist);
+  }
+
+  // Rank results against what the user already typed so Autofill picks the
+  // right release (matching artist/year wins) instead of just the first row.
+  function pickBest(results) {
+    const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const wantArtist = norm(v.artist);
+    const wantYear = (v.year || "").trim();
+    const scored = results.map((r) => {
+      let score = 0;
+      const ra = norm(r.artist);
+      if (wantArtist && ra) {
+        if (ra === wantArtist) score += 100;
+        else if (ra.includes(wantArtist) || wantArtist.includes(ra)) score += 60;
+      }
+      if (wantYear && r.year === wantYear) score += 20;
+      return { r, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0].r;
   }
 
   // Show a list of matches to choose from.
@@ -172,7 +208,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     try {
       const results = await runSearch();
       if (!results.length) { setLookupError("No matches found. Try a shorter title."); return; }
-      await applyResult(results[0]);
+      await applyResult(pickBest(results));
     } catch (e) { setLookupError(e.message); }
     finally { setLookupBusy(false); }
   }
