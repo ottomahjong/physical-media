@@ -422,3 +422,45 @@ input[type="checkbox"] {
 }
 .imgbox img { width: 100%; height: auto; display: block; }
 .imgactions { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+
+/* ============================================================
+   Drag-and-drop image upload
+   ============================================================ */
+.dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  background: var(--bg-sunken);
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+  min-height: 80px;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+}
+.dropzone:hover { border-color: var(--accent); background: rgba(27,74,102,0.04); }
+.dropzone.dragover { border-color: var(--accent); background: rgba(27,74,102,0.08); border-style: solid; }
+.dropzone.uploading { opacity: 0.6; cursor: wait; }
+.dropzone-label { font-size: 0.85rem; color: var(--fg-muted); line-height: 1.5; pointer-events: none; }
+.dropzone-sub { font-size: 0.72rem; color: var(--ti-ocean); }
+.dropzone-img { max-height: 180px; width: auto; max-width: 100%; border-radius: var(--radius-sm); object-fit: contain; }
+.dropzone-replace {
+  font-size: 0.68rem; color: var(--fg-muted);
+  background: rgba(245,241,232,0.85); padding: 3px 8px; border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   Groq value block
+   ============================================================ */
+.groq-block { margin-top: 18px; border-top: 1px solid var(--rule); padding-top: 16px; }
+.groq-result {
+  margin-top: 12px; padding: 14px 16px;
+  background: rgba(27,74,102,0.06); border: 1px solid rgba(27,74,102,0.15);
+  border-radius: var(--radius-md); font-size: 0.88rem; line-height: 1.6; color: var(--fg-soft);
+}
+.groq-eyebrow {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ti-ocean); margin-bottom: 6px;
+}

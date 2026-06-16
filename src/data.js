@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient.js";
 
-export const TYPES = ["VHS", "DVD", "CD", "Blu-ray", "Vinyl", "Other"];
+export const TYPES = ["VHS", "DVD", "CD", "Blu-ray", "Vinyl", "Cassette", "Other"];
 export const CONDITIONS = [
   "Mint (M)",
   "Near Mint (NM or M-)",

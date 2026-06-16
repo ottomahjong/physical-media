@@ -5,6 +5,46 @@ import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
 
+const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
+
+async function fetchGroqValue(item) {
+  const details = [
+    `Format: ${item.type}`,
+    `Title: ${item.title || "Unknown"}`,
+    item.artist && `Artist/Studio: ${item.artist}`,
+    item.year && `Year: ${item.year}`,
+    item.media_condition && `Media condition: ${item.media_condition}`,
+    item.case_condition && `Case condition: ${item.case_condition}`,
+    item.notes && `Notes: ${item.notes}`,
+  ].filter(Boolean).join("\n");
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${GROQ_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: "You are a physical media collector and reseller expert. Given item details, provide a concise current market value estimate based on recent eBay sold listings, Discogs, and collector markets. Include a price range for 'used' and 'good/excellent' condition, note any factors affecting value, and mention if it's particularly sought after. Keep the response under 150 words.",
+        },
+        {
+          role: "user",
+          content: `What is the current resale market value for this item?\n\n${details}`,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 300,
+    }),
+  });
+  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
 export default function Listing() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -13,6 +53,9 @@ export default function Listing() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [groqResult, setGroqResult] = useState(null);
+  const [groqBusy, setGroqBusy] = useState(false);
+  const [groqError, setGroqError] = useState(null);
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
@@ -32,6 +75,20 @@ export default function Listing() {
     if (!confirm("Delete this listing permanently?")) return;
     await deleteListing(id);
     navigate("/");
+  }
+
+  async function checkValue() {
+    setGroqBusy(true);
+    setGroqError(null);
+    setGroqResult(null);
+    try {
+      const result = await fetchGroqValue(item);
+      setGroqResult(result);
+    } catch (e) {
+      setGroqError(e.message);
+    } finally {
+      setGroqBusy(false);
+    }
   }
 
   if (loading) return <div className="empty">Loading…</div>;
@@ -69,7 +126,7 @@ export default function Listing() {
         </div>
         <div className="detailinfo">
           <span className={"tag t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type}</span>
-          <h2>{item.title}</h2>
+          <h2>{item.title || <em style={{ color: "var(--fg-muted)" }}>Untitled</em>}</h2>
           {item.artist && <p className="dsub">{item.artist}{item.year ? ` · ${item.year}` : ""}</p>}
 
           <dl className="facts">
@@ -82,6 +139,26 @@ export default function Listing() {
           </dl>
 
           {item.notes && <p className="notes">{item.notes}</p>}
+
+          {/* Groq value check — only shown when API key is configured */}
+          {GROQ_KEY && (
+            <div className="groq-block">
+              <button
+                className="btn ghost"
+                onClick={checkValue}
+                disabled={groqBusy}
+              >
+                {groqBusy ? "Checking market value…" : "Check current market value"}
+              </button>
+              {groqError && <p className="err" style={{ marginTop: 8 }}>{groqError}</p>}
+              {groqResult && (
+                <div className="groq-result">
+                  <p className="groq-eyebrow">AI market estimate</p>
+                  <p>{groqResult}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {isOwner && (
             <div className="formbtns">

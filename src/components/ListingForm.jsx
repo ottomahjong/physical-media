@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { uploadImage, TYPES, CONDITIONS, STATUSES } from "../data.js";
 
 const empty = {
@@ -20,13 +20,14 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   const [v, setV] = useState({ ...empty, ...initial });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState(null);
+  const fileRef = useRef();
 
-  const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
+  const set = (k) => (e) => setV((cur) => ({ ...cur, [k]: e.target.value }));
 
-  async function pickImage(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
     setUploading(true);
     setError(null);
     try {
@@ -39,6 +40,12 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     }
   }
 
+  function onDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    handleFile(e.dataTransfer.files?.[0]);
+  }
+
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
@@ -46,7 +53,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     try {
       const payload = {
         type: v.type,
-        title: v.title.trim(),
+        title: v.title.trim() || null,
         artist: v.artist.trim() || null,
         year: v.year ? String(v.year).trim() : null,
         media_condition: v.media_condition || null,
@@ -67,29 +74,39 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
   return (
     <form className="lform" onSubmit={submit}>
-      <div className="imgrow">
-        <div className="imgbox">
-          {v.image_url ? (
-            <img src={v.image_url} alt="thumbnail" />
-          ) : (
-            <span>No image</span>
-          )}
-        </div>
-        <div className="imgactions">
-          <label className="btn">
-            {uploading ? "Uploading…" : "Upload image"}
-            <input type="file" accept="image/*" hidden onChange={pickImage} disabled={uploading} />
-          </label>
-          {v.image_url && (
-            <button type="button" className="btn ghost" onClick={() => setV({ ...v, image_url: "" })}>
-              Remove image
-            </button>
-          )}
-        </div>
+      {/* Drag-and-drop image area */}
+      <div
+        className={"dropzone" + (dragOver ? " dragover" : "") + (uploading ? " uploading" : "")}
+        onClick={() => !uploading && fileRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+      >
+        {uploading ? (
+          <span className="dropzone-label">Uploading…</span>
+        ) : v.image_url ? (
+          <>
+            <img src={v.image_url} alt="thumbnail" className="dropzone-img" />
+            <span className="dropzone-replace">Drop or click to replace</span>
+          </>
+        ) : (
+          <span className="dropzone-label">
+            Drop image here<br />
+            <span className="dropzone-sub">or click to browse</span>
+          </span>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" hidden
+          onChange={(e) => handleFile(e.target.files?.[0])} />
       </div>
+      {v.image_url && (
+        <button type="button" className="btn ghost" style={{ marginBottom: 8 }}
+          onClick={() => setV((cur) => ({ ...cur, image_url: "" }))}>
+          Remove image
+        </button>
+      )}
 
       <label>Title</label>
-      <input value={v.title} onChange={set("title")} required placeholder="e.g. The Lion King" />
+      <input value={v.title} onChange={set("title")} placeholder="e.g. The Lion King" />
 
       <div className="grid2">
         <div>
@@ -147,7 +164,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
       </div>
 
       <label>Notes</label>
-      <textarea rows="3" value={v.notes || ""} onChange={set("notes")} placeholder="Condition details, where it's stored, listing link, etc." />
+      <textarea rows="3" value={v.notes || ""} onChange={set("notes")}
+        placeholder="Condition details, where it's stored, listing link, etc." />
 
       {error && <p className="err">{error}</p>}
 
