@@ -1,18 +1,26 @@
 import { useRef, useState } from "react";
 import { uploadImage, TYPES, CONDITIONS, STATUSES } from "../data.js";
 
-const DISCOGS_UA = "KeddyMedia/1.0 +keddy-media.netlify.com";
-const OMDB_KEY   = import.meta.env.VITE_OMDB_API_KEY;
+const DISCOGS_UA    = "KeddyMedia/1.0 +keddy-media.netlify.com";
+const DISCOGS_TOKEN = import.meta.env.VITE_DISCOGS_TOKEN;
+const OMDB_KEY      = import.meta.env.VITE_OMDB_API_KEY;
 
 const MUSIC_TYPES = ["CD", "Cassette", "Vinyl"];
 const VIDEO_TYPES = ["VHS", "DVD", "Blu-ray"];
 
 const DISCOGS_FORMAT = { CD: "CD", Cassette: "Cassette", Vinyl: "Vinyl" };
 
+function discogsHeaders() {
+  const h = { "User-Agent": DISCOGS_UA };
+  if (DISCOGS_TOKEN) h["Authorization"] = `Discogs token=${DISCOGS_TOKEN}`;
+  return h;
+}
+
 async function searchDiscogs(title, type) {
   const fmt = DISCOGS_FORMAT[type] || "CD";
   const url = `https://api.discogs.com/database/search?q=${encodeURIComponent(title)}&type=release&format=${fmt}&per_page=8`;
-  const res = await fetch(url, { headers: { "User-Agent": DISCOGS_UA } });
+  const res = await fetch(url, { headers: discogsHeaders() });
+  if (res.status === 401) throw new Error("Discogs needs a free token (VITE_DISCOGS_TOKEN) to return matches and cover art.");
   if (!res.ok) throw new Error("Discogs search failed");
   const data = await res.json();
   return (data.results || []).map((r) => ({
@@ -20,9 +28,26 @@ async function searchDiscogs(title, type) {
     artist: r.title?.split(" - ")[0] || "",
     year:   r.year ? String(r.year) : "",
     label:  r.label?.[0] || "",
+    genre:  [...(r.genre || []), ...(r.style || [])].join(", "),
     thumb:  r.cover_image || r.thumb || "",
     source: "Discogs",
   }));
+}
+
+// OMDB detail fetch (by imdbID) returns Genre + a full poster.
+async function omdbDetail(imdbID) {
+  if (!OMDB_KEY || !imdbID) return {};
+  try {
+    const res = await fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${OMDB_KEY}`);
+    if (!res.ok) return {};
+    const d = await res.json();
+    if (d.Response === "False") return {};
+    return {
+      genre:  d.Genre && d.Genre !== "N/A" ? d.Genre : "",
+      thumb:  d.Poster && d.Poster !== "N/A" ? d.Poster : "",
+      artist: d.Director && d.Director !== "N/A" ? d.Director : "",
+    };
+  } catch { return {}; }
 }
 
 async function searchOMDB(title, year) {
@@ -35,9 +60,10 @@ async function searchOMDB(title, year) {
   if (data.Response === "False") return [];
   return (data.Search || []).slice(0, 8).map((r) => ({
     title:  r.Title,
-    artist: r.Director || r.Writer || "",
+    artist: "",
     year:   r.Year?.replace(/[^0-9].*/, "") || "",
     label:  r.Type,
+    genre:  "",
     thumb:  r.Poster !== "N/A" ? r.Poster : "",
     source: "OMDB",
     imdbID: r.imdbID,
@@ -45,7 +71,7 @@ async function searchOMDB(title, year) {
 }
 
 const empty = {
-  type: "VHS", title: "", artist: "", year: "",
+  type: "VHS", title: "", artist: "", year: "", genre: "",
   media_condition: "Not Specified", case_condition: "Not Specified",
   quantity: 1, paid_price: "", status: "Available", notes: "", image_url: "",
 };
@@ -81,36 +107,58 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     handleFile(e.dataTransfer.files?.[0]);
   }
 
-  async function doLookup() {
+  async function runSearch() {
     const q = (lookupQuery || v.title).trim();
-    if (!q) return;
+    if (!q) throw new Error("Enter a title first.");
+    if (MUSIC_TYPES.includes(v.type)) return searchDiscogs(q, v.type);
+    if (VIDEO_TYPES.includes(v.type)) {
+      if (!OMDB_KEY) throw new Error("Add a free OMDB API key (VITE_OMDB_API_KEY) to enable VHS/DVD lookup. Get one at omdbapi.com — takes 30 seconds.");
+      return searchOMDB(q, v.year);
+    }
+    return searchDiscogs(q, "CD");
+  }
+
+  // Show a list of matches to choose from.
+  async function doLookup() {
     setLookupBusy(true); setLookupError(null); setLookupResults(null);
     try {
-      let results;
-      if (MUSIC_TYPES.includes(v.type)) {
-        results = await searchDiscogs(q, v.type);
-      } else if (VIDEO_TYPES.includes(v.type)) {
-        results = await searchOMDB(q, v.year);
-        if (!results.length && !OMDB_KEY) {
-          setLookupError("Add a free OMDB API key (VITE_OMDB_API_KEY) to enable VHS/DVD lookup. Get one at omdbapi.com — takes 30 seconds.");
-          setLookupBusy(false); return;
-        }
-      } else {
-        results = await searchDiscogs(q, "CD");
-      }
-      setLookupResults(results.length ? results : []);
+      const results = await runSearch();
+      setLookupResults(results);
       if (!results.length) setLookupError("No matches found. Try a shorter title.");
     } catch (e) { setLookupError(e.message); }
     finally { setLookupBusy(false); }
   }
 
-  async function pickResult(r) {
-    const next = { ...v, title: r.title, artist: r.artist, year: r.year };
-    if (r.thumb && !v.image_url) {
-      // Use external URL directly as image_url (no upload needed for preview)
-      next.image_url = r.thumb;
+  // Auto-pick the single best (first) match and fill everything.
+  async function doAutofill() {
+    setLookupBusy(true); setLookupError(null); setLookupResults(null);
+    try {
+      const results = await runSearch();
+      if (!results.length) { setLookupError("No matches found. Try a shorter title."); return; }
+      await applyResult(results[0]);
+    } catch (e) { setLookupError(e.message); }
+    finally { setLookupBusy(false); }
+  }
+
+  async function applyResult(r) {
+    let genre = r.genre || "";
+    let thumb = r.thumb || "";
+    let artist = r.artist || "";
+    // OMDB search results lack genre/director — enrich from the detail endpoint.
+    if (r.source === "OMDB" && r.imdbID) {
+      const d = await omdbDetail(r.imdbID);
+      genre  = genre  || d.genre  || "";
+      thumb  = thumb  || d.thumb  || "";
+      artist = artist || d.artist || "";
     }
-    setV(next);
+    setV((cur) => ({
+      ...cur,
+      title:  r.title || cur.title,
+      artist: artist || cur.artist,
+      year:   r.year || cur.year,
+      genre:  genre || cur.genre,
+      image_url: thumb || cur.image_url,
+    }));
     setLookupResults(null);
     setLookupQuery("");
   }
@@ -122,6 +170,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         type: v.type, title: v.title.trim() || null,
         artist: v.artist.trim() || null,
         year: v.year ? String(v.year).trim() : null,
+        genre: v.genre.trim() || null,
         media_condition: v.media_condition || null,
         case_condition: v.case_condition || null,
         quantity: Number(v.quantity) || 1,
@@ -180,7 +229,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </div>
       </div>
 
-      {/* Title with inline lookup */}
+      {/* Title with inline lookup + autofill */}
       <label>Title</label>
       <div className="lookup-row">
         <input
@@ -190,11 +239,21 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         />
         <button
           type="button"
+          className="btn primary lookup-btn"
+          onClick={doAutofill}
+          disabled={lookupBusy}
+          title="Find the best match and fill all fields automatically"
+        >
+          {lookupBusy ? "…" : "Autofill"}
+        </button>
+        <button
+          type="button"
           className="btn ghost lookup-btn"
           onClick={doLookup}
           disabled={lookupBusy}
+          title="Show a list of matches to choose from"
         >
-          {lookupBusy ? "…" : "Look up"}
+          Browse
         </button>
       </div>
 
@@ -205,11 +264,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           {lookupResults.length === 0 ? (
             <p className="lookup-empty">No results</p>
           ) : lookupResults.map((r, idx) => (
-            <button key={idx} type="button" className="lookup-item" onClick={() => pickResult(r)}>
+            <button key={idx} type="button" className="lookup-item" onClick={() => applyResult(r)}>
               {r.thumb && <img src={r.thumb} alt="" className="lookup-thumb" />}
               <span className="lookup-info">
                 <span className="lookup-title">{r.title}</span>
-                <span className="lookup-meta">{[r.artist, r.year, r.label].filter(Boolean).join(" · ")}</span>
+                <span className="lookup-meta">{[r.artist, r.year, r.label, r.genre].filter(Boolean).join(" · ")}</span>
               </span>
               <span className="lookup-src">{r.source}</span>
             </button>
@@ -223,6 +282,9 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
       <label>Artist / Studio / Director</label>
       <input value={v.artist || ""} onChange={set("artist")} placeholder="e.g. Walt Disney" />
+
+      <label>Genre</label>
+      <input value={v.genre || ""} onChange={set("genre")} placeholder="e.g. Animation, Family" />
 
       <div className="grid2">
         <div>

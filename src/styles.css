@@ -537,9 +537,9 @@ input[type="checkbox"] {
    Database lookup
    ============================================================ */
 .lookup-row {
-  display: flex; gap: 8px; align-items: stretch;
+  display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap;
 }
-.lookup-row input { flex: 1; }
+.lookup-row input { flex: 1; min-width: 140px; }
 .lookup-btn { flex: 0 0 auto; white-space: nowrap; }
 .lookup-results {
   border: 1px solid var(--border); border-radius: var(--radius-md);
