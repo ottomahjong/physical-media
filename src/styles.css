@@ -29,6 +29,13 @@ nav{display:flex;gap:8px;flex:0 0 auto}
 
 main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
 
+/* ---------- list tabs (collection / wish list) ---------- */
+.listtabs{display:flex;gap:6px;margin-top:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:4px}
+.listtab{flex:1;font-size:.8rem;font-weight:800;letter-spacing:.05em;padding:9px 14px;
+  border-radius:999px;cursor:pointer;background:transparent;color:var(--paper);border:0;white-space:nowrap}
+.listtab[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+
 /* ---------- search / filters ---------- */
 .controls{margin-top:8px}
 .searchwrap{position:relative}
@@ -90,6 +97,8 @@ main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
 .tag{display:inline-block;font-size:.62rem;font-weight:800;letter-spacing:.06em;
   padding:4px 8px;border-radius:6px;border:1px solid currentColor;color:var(--amber)}
 .tag.t-VHS{color:var(--coral)}.tag.t-DVD{color:var(--amber)}.tag.t-CD{color:var(--green)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag.wish{color:var(--green)}
 .detailinfo h2{font-size:1.5rem;font-weight:800;margin:10px 0 2px}
 .dsub{color:rgba(243,236,224,.6);margin-bottom:14px}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:10px 0 14px;font-size:.92rem}
@@ -110,6 +119,8 @@ main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
   border-color:var(--amber);box-shadow:0 0 0 3px rgba(217,155,43,.18)}
 .lform textarea{resize:vertical}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;gap:8px;margin-bottom:4px}
+.seg .chip{flex:1;text-align:center}
 .imgrow{display:flex;gap:14px;align-items:center;margin-bottom:6px}
 .imgbox{width:90px;height:90px;border-radius:10px;background:var(--ink-2);border:1px solid var(--line);
   display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;font-size:.7rem;color:rgba(243,236,224,.4)}

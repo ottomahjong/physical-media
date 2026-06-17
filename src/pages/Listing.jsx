@@ -68,7 +68,10 @@ export default function Listing() {
           )}
         </div>
         <div className="detailinfo">
-          <span className={"tag t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type}</span>
+          <span className="tags">
+            <span className={"tag t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type}</span>
+            {(item.list || "collection") === "wishlist" && <span className="tag wish">Wish list</span>}
+          </span>
           <h2>{item.title}</h2>
           {item.artist && <p className="dsub">{item.artist}{item.year ? ` · ${item.year}` : ""}</p>}
 

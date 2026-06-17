@@ -18,12 +18,19 @@ create table if not exists public.listings (
   status      text default 'Available',
   notes       text,
   image_url   text,
+  list        text not null default 'collection',
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
+-- For databases created before the wish list existed: add the column without
+-- touching any saved rows. Existing items stay in the 'collection'.
+alter table public.listings
+  add column if not exists list text not null default 'collection';
+
 create index if not exists listings_title_idx on public.listings (lower(title));
 create index if not exists listings_type_idx  on public.listings (type);
+create index if not exists listings_list_idx  on public.listings (list);
 
 -- 2. Row Level Security -------------------------------------------------------
 -- Anyone can READ. Only the owner email can write.

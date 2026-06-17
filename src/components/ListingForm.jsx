@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { uploadImage, TYPES, CONDITIONS, STATUSES } from "../data.js";
+import { uploadImage, TYPES, CONDITIONS, STATUSES, DEFAULT_LIST, artistLabel } from "../data.js";
 
 const empty = {
   type: "VHS",
@@ -13,6 +13,7 @@ const empty = {
   status: "Available",
   notes: "",
   image_url: "",
+  list: DEFAULT_LIST,
 };
 
 export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
@@ -55,6 +56,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         status: v.status || "Available",
         notes: v.notes.trim() || null,
         image_url: v.image_url || null,
+        list: v.list || DEFAULT_LIST,
       };
       await onSave(payload);
     } catch (err) {
@@ -86,6 +88,26 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </div>
       </div>
 
+      <label>List</label>
+      <div className="seg">
+        <button
+          type="button"
+          className="chip"
+          aria-pressed={(v.list || DEFAULT_LIST) === "collection"}
+          onClick={() => setV({ ...v, list: "collection" })}
+        >
+          Collection
+        </button>
+        <button
+          type="button"
+          className="chip"
+          aria-pressed={(v.list || DEFAULT_LIST) === "wishlist"}
+          onClick={() => setV({ ...v, list: "wishlist" })}
+        >
+          Wish list
+        </button>
+      </div>
+
       <label>Title</label>
       <input value={v.title} onChange={set("title")} required placeholder="e.g. The Lion King" />
 
@@ -102,8 +124,12 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </div>
       </div>
 
-      <label>Artist / Studio / Company</label>
-      <input value={v.artist || ""} onChange={set("artist")} placeholder="e.g. Walt Disney" />
+      <label>{artistLabel(v.type)}</label>
+      <input
+        value={v.artist || ""}
+        onChange={set("artist")}
+        placeholder={artistLabel(v.type) === "Studio" ? "e.g. Walt Disney" : "e.g. Fleetwood Mac"}
+      />
 
       <div className="grid2">
         <div>

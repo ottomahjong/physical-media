@@ -11,6 +11,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
+  const [list, setList] = useState("all");
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -30,9 +31,10 @@ export default function Admin() {
     setAdding(false);
   }
 
-  const rows = items.filter((i) =>
-    (`${i.title} ${i.artist || ""}`).toLowerCase().includes(query.trim().toLowerCase())
-  );
+  const rows = items.filter((i) => {
+    if (list !== "all" && (i.list || "collection") !== list) return false;
+    return (`${i.title} ${i.artist || ""}`).toLowerCase().includes(query.trim().toLowerCase());
+  });
 
   return (
     <div className="admin">
@@ -49,6 +51,19 @@ export default function Admin() {
           <ListingForm initial={{}} onSave={add} onCancel={() => setAdding(false)} />
         </div>
       )}
+
+      <div className="filters">
+        {[["all", "All"], ["collection", "Collection"], ["wishlist", "Wish list"]].map(([val, label]) => (
+          <button
+            key={val}
+            className="chip"
+            aria-pressed={list === val}
+            onClick={() => setList(val)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <div className="searchwrap solo">
         <input
@@ -76,7 +91,7 @@ export default function Admin() {
               </span>
               <span className="aval">
                 <span className="good">{formatMoney(i.good_price) || "—"}</span>
-                <span className="badge">{i.status || "Available"}</span>
+                <span className="badge">{(i.list || "collection") === "wishlist" ? "Wish list" : i.status || "Available"}</span>
               </span>
             </Link>
           ))}
