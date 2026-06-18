@@ -33,25 +33,23 @@ create index if not exists listings_type_idx  on public.listings (type);
 create index if not exists listings_list_idx  on public.listings (list);
 
 -- 2. Row Level Security -------------------------------------------------------
--- Anyone can READ. Only the owner email can write.
+-- Anyone can READ and WRITE with the public anon key. Access control for
+-- editing lives in the app (a simple email+password gate), not the database.
+-- This is a deliberate low-security trade-off for a personal project.
 alter table public.listings enable row level security;
 
-drop policy if exists "public read"  on public.listings;
-drop policy if exists "owner insert" on public.listings;
-drop policy if exists "owner update" on public.listings;
-drop policy if exists "owner delete" on public.listings;
+drop policy if exists "public read"   on public.listings;
+drop policy if exists "owner insert"  on public.listings;
+drop policy if exists "owner update"  on public.listings;
+drop policy if exists "owner delete"  on public.listings;
+drop policy if exists "public insert" on public.listings;
+drop policy if exists "public update" on public.listings;
+drop policy if exists "public delete" on public.listings;
 
-create policy "public read" on public.listings
-  for select using (true);
-
-create policy "owner insert" on public.listings
-  for insert with check ((auth.jwt() ->> 'email') = 'ottomahjong@gmail.com');
-
-create policy "owner update" on public.listings
-  for update using ((auth.jwt() ->> 'email') = 'ottomahjong@gmail.com');
-
-create policy "owner delete" on public.listings
-  for delete using ((auth.jwt() ->> 'email') = 'ottomahjong@gmail.com');
+create policy "public read"   on public.listings for select using (true);
+create policy "public insert" on public.listings for insert with check (true);
+create policy "public update" on public.listings for update using (true);
+create policy "public delete" on public.listings for delete using (true);
 
 -- 3. Image storage bucket -----------------------------------------------------
 insert into storage.buckets (id, name, public)
@@ -66,17 +64,15 @@ drop policy if exists "thumbnails owner delete"  on storage.objects;
 create policy "thumbnails public read" on storage.objects
   for select using (bucket_id = 'thumbnails');
 
-create policy "thumbnails owner insert" on storage.objects
-  for insert with check (
-    bucket_id = 'thumbnails' and (auth.jwt() ->> 'email') = 'ottomahjong@gmail.com'
-  );
+drop policy if exists "thumbnails public insert" on storage.objects;
+drop policy if exists "thumbnails public update" on storage.objects;
+drop policy if exists "thumbnails public delete" on storage.objects;
 
-create policy "thumbnails owner update" on storage.objects
-  for update using (
-    bucket_id = 'thumbnails' and (auth.jwt() ->> 'email') = 'ottomahjong@gmail.com'
-  );
+create policy "thumbnails public insert" on storage.objects
+  for insert with check (bucket_id = 'thumbnails');
 
-create policy "thumbnails owner delete" on storage.objects
-  for delete using (
-    bucket_id = 'thumbnails' and (auth.jwt() ->> 'email') = 'ottomahjong@gmail.com'
-  );
+create policy "thumbnails public update" on storage.objects
+  for update using (bucket_id = 'thumbnails');
+
+create policy "thumbnails public delete" on storage.objects
+  for delete using (bucket_id = 'thumbnails');

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { fetchListings, formatMoney, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [type, setType] = useState("All");
   const [sort, setSort] = useState("az");
   const [list, setList] = useState("collection");
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
@@ -29,7 +30,6 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Items on the currently selected list (collection vs. wish list).
   const listItems = useMemo(
     () => items.filter((i) => (i.list || "collection") === list),
     [items, list]
@@ -47,51 +47,34 @@ export default function Home() {
       if (!q) return true;
       return (`${i.title} ${i.artist || ""} ${i.year || ""}`).toLowerCase().includes(q);
     });
+    const byAZ = (a, b) => sortKey(a.title).localeCompare(sortKey(b.title));
+    if (sort === "value") {
+      r = r.slice().sort((a, b) => (Number(b.good_price) || 0) - (Number(a.good_price) || 0) || byAZ(a, b));
+    } else {
+      r = r.slice().sort(byAZ);
+    }
     return r;
-  }, [listItems, query, type]);
+  }, [listItems, query, type, sort]);
 
   const wishlistCount = useMemo(
     () => items.filter((i) => (i.list || "collection") === "wishlist").length,
     [items]
   );
 
-  const totalGood = rows.reduce((s, i) => s + (Number(i.good_price) || 0), 0);
-  const totalUsed = rows.reduce((s, i) => s + (Number(i.used_price) || 0), 0);
+  const totalValue = rows.reduce((s, i) => s + (Number(i.good_price) || 0) * (Number(i.quantity) || 1), 0);
+  const totalPaid = rows.reduce((s, i) => s + (Number(i.used_price) || 0) * (Number(i.quantity) || 1), 0);
 
-  const byAZ = (a, b) => sortKey(a.title).localeCompare(sortKey(b.title));
-  const byValue = (a, b) =>
-    (Number(b.good_price) || 0) - (Number(a.good_price) || 0) || byAZ(a, b);
-
-  function Row({ i }) {
-    const sub = [i.artist, i.year].filter(Boolean).join(" · ");
-    const good = formatMoney(i.good_price);
-    const used = formatMoney(i.used_price);
-    return (
-      <Link to={`/listing/${i.id}`} className="item">
-        <Thumb item={i} />
-        <span className="info">
-          <span className="title">{i.title || <em className="blank">— untitled —</em>}</span>
-          {sub && <span className="by">{sub}</span>}
-        </span>
-        <span className="val">
-          {good || used ? (
-            <>
-              <span className="good">{good || "—"}</span>
-              <span className="used">used {used || "—"}</span>
-            </>
-          ) : (
-            <span className="none">—</span>
-          )}
-        </span>
-      </Link>
-    );
+  function switchList(next) {
+    setList(next);
+    setType("All");
+    setQuery("");
   }
 
   let body;
   if (!isConfigured) {
     body = null;
   } else if (loading) {
-    body = <div className="empty">Loading the collection…</div>;
+    body = <div className="empty">Loading the inventory…</div>;
   } else if (error) {
     body = (
       <div className="empty">
@@ -107,22 +90,43 @@ export default function Home() {
         {listItems.length ? "Try fewer letters or another filter." : "Log in as the owner to add your first one."}
       </div>
     );
-  } else if (sort === "value") {
-    body = rows.slice().sort(byValue).map((i) => <Row key={i.id} i={i} />);
   } else {
-    body = [];
-    TYPES.forEach((t) => {
-      const g = rows.filter((r) => r.type === t).sort(byAZ);
-      if (!g.length) return;
-      if (type === "All") body.push(<div key={"h" + t} className="group-label">{t}</div>);
-      g.forEach((i) => body.push(<Row key={i.id} i={i} />));
-    });
-  }
-
-  function switchList(next) {
-    setList(next);
-    setType("All");
-    setQuery("");
+    body = (
+      <div className="tablewrap">
+        <table className="ctable">
+          <thead>
+            <tr>
+              <th className="colhide col-thumb"></th>
+              <th>Title</th>
+              <th>Artist / Studio</th>
+              <th className="colhide">Year</th>
+              <th className="colhide">Category</th>
+              <th className="colhide">Condition</th>
+              <th className="colhide">Status</th>
+              <th className="colhide num">Price Paid</th>
+              <th className="num">Est. Value</th>
+              <th className="num">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((i) => (
+              <tr key={i.id} onClick={() => navigate(`/listing/${i.id}`)} className="crow">
+                <td className="colhide col-thumb"><Thumb item={i} /></td>
+                <td className="ctitle">{i.title || <em className="blank">— untitled —</em>}</td>
+                <td className="cby">{i.artist || "—"}</td>
+                <td className="colhide">{i.year || "—"}</td>
+                <td className="colhide">{i.type || "—"}</td>
+                <td className="colhide">{i.condition || "—"}</td>
+                <td className="colhide">{i.status || "—"}</td>
+                <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
+                <td className="num cval">{formatMoney(i.good_price) || "—"}</td>
+                <td className="num">{i.quantity || 1}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   return (
@@ -176,8 +180,8 @@ export default function Home() {
       {isConfigured && (
         <div className="metabar">
           <p className="meta">
-            {rows.length} items · est. <b>{formatMoney(totalGood) || "$0"}</b> good ·{" "}
-            {formatMoney(totalUsed) || "$0"} used
+            {rows.length} items · est. value <b>{formatMoney(totalValue) || "$0"}</b> ·{" "}
+            {formatMoney(totalPaid) || "$0"} paid
           </p>
           <div className="sort">
             <button className="chip" aria-pressed={sort === "az"} onClick={() => setSort("az")}>A–Z</button>

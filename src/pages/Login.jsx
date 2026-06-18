@@ -1,66 +1,55 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
-import { supabase, OWNER_EMAIL, isConfigured } from "../supabaseClient.js";
+import { Navigate, useNavigate } from "react-router-dom";
+import { OWNER_EMAIL } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 
 export default function Login() {
-  const { isOwner } = useAuth();
-  const [email, setEmail] = useState(OWNER_EMAIL);
-  const [sent, setSent] = useState(false);
+  const { isOwner, signIn } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
 
   if (isOwner) return <Navigate to="/admin" replace />;
 
-  async function send(e) {
+  function submit(e) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo: window.location.origin + "/admin" },
-      });
-      if (error) throw error;
-      setSent(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
+    if (signIn(email, password)) {
+      navigate("/admin");
+    } else {
+      setError("Email or password is incorrect.");
     }
-  }
-
-  if (!isConfigured) {
-    return <div className="empty">Login is unavailable until the database is connected.</div>;
   }
 
   return (
     <div className="panel">
       <h2>Owner login</h2>
-      {sent ? (
+      <form onSubmit={submit}>
         <p className="note">
-          Check your inbox at <b>{email}</b>. Tap the link in the email to sign in,
-          then you'll be able to add, edit, and remove listings.
+          Sign in to add, edit, and remove listings. Visitors can browse without
+          signing in.
         </p>
-      ) : (
-        <form onSubmit={send}>
-          <p className="note">
-            Enter your email and we'll send you a one-time sign-in link. No password needed.
-            Only <b>{OWNER_EMAIL}</b> can make changes.
-          </p>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          {error && <p className="err">{error}</p>}
-          <button className="btn primary" disabled={busy}>
-            {busy ? "Sending…" : "Send me a sign-in link"}
-          </button>
-        </form>
-      )}
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={OWNER_EMAIL}
+          autoComplete="username"
+          required
+        />
+        <label>Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
+        {error && <p className="err">{error}</p>}
+        <button className="btn primary">Sign in</button>
+      </form>
     </div>
   );
 }

@@ -79,8 +79,8 @@ export default function Listing() {
             {item.condition && (<><dt>Condition</dt><dd>{item.condition}</dd></>)}
             {item.status && (<><dt>Status</dt><dd>{item.status}</dd></>)}
             {item.quantity > 1 && (<><dt>Quantity</dt><dd>{item.quantity}</dd></>)}
-            <dt>Good price</dt><dd>{good || "—"}</dd>
-            <dt>Used price</dt><dd>{used || "—"}</dd>
+            <dt>Est. Value</dt><dd>{good || "—"}</dd>
+            <dt>Price Paid</dt><dd>{used || "—"}</dd>
           </dl>
 
           {item.notes && <p className="notes">{item.notes}</p>}

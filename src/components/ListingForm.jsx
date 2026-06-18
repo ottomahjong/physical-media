@@ -116,46 +116,52 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </Suspense>
       )}
 
-      <div className="scanrow">
-        <button type="button" className="btn ghost" onClick={() => { setScanMsg(null); setScanning(true); }}>
-          Scan barcode
-        </button>
-        <div className="scaninput">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="…or type a UPC/EAN"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(code); } }}
-          />
-          <button type="button" className="btn" onClick={() => lookup(code)} disabled={looking || !code.trim()}>
-            {looking ? "Looking…" : "Look up"}
+      <div className="grid2 topboxes">
+        <div className="formbox">
+          <label>Scan barcode</label>
+          <button type="button" className="btn ghost btn--block" onClick={() => { setScanMsg(null); setScanning(true); }}>
+            Scan barcode
           </button>
+          <div className="scaninput">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="…or type a UPC/EAN"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(code); } }}
+            />
+            <button type="button" className="btn" onClick={() => lookup(code)} disabled={looking || !code.trim()}>
+              {looking ? "Looking…" : "Look up"}
+            </button>
+          </div>
+        </div>
+
+        <div className="formbox">
+          <label>Upload image</label>
+          <div className="imgrow">
+            <div className="imgbox">
+              {v.image_url ? (
+                <img src={v.image_url} alt="thumbnail" />
+              ) : (
+                <span>No image</span>
+              )}
+            </div>
+            <div className="imgactions">
+              <label className="btn">
+                {uploading ? "Uploading…" : "Upload"}
+                <input type="file" accept="image/*" hidden onChange={pickImage} disabled={uploading} />
+              </label>
+              {v.image_url && (
+                <button type="button" className="btn ghost" onClick={() => setV({ ...v, image_url: "" })}>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
       {scanMsg && <p className="scanmsg">{scanMsg}</p>}
-
-      <div className="imgrow">
-        <div className="imgbox">
-          {v.image_url ? (
-            <img src={v.image_url} alt="thumbnail" />
-          ) : (
-            <span>No image</span>
-          )}
-        </div>
-        <div className="imgactions">
-          <label className="btn">
-            {uploading ? "Uploading…" : "Upload image"}
-            <input type="file" accept="image/*" hidden onChange={pickImage} disabled={uploading} />
-          </label>
-          {v.image_url && (
-            <button type="button" className="btn ghost" onClick={() => setV({ ...v, image_url: "" })}>
-              Remove image
-            </button>
-          )}
-        </div>
-      </div>
 
       <label>List</label>
       <div className="seg">
@@ -217,11 +223,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
       <div className="grid2">
         <div>
-          <label>Used price ($)</label>
+          <label>Price Paid ($)</label>
           <input type="number" step="0.01" value={v.used_price ?? ""} onChange={set("used_price")} placeholder="1" />
         </div>
         <div>
-          <label>Good price ($)</label>
+          <label>Est. Value ($)</label>
           <input type="number" step="0.01" value={v.good_price ?? ""} onChange={set("good_price")} placeholder="3" />
         </div>
       </div>
