@@ -19,6 +19,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("All");
   const [sort, setSort] = useState("az");
+  const [list, setList] = useState("collection");
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
@@ -28,20 +29,31 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Items on the currently selected list (collection vs. wish list).
+  const listItems = useMemo(
+    () => items.filter((i) => (i.list || "collection") === list),
+    [items, list]
+  );
+
   const types = useMemo(
-    () => ["All", ...TYPES.filter((t) => items.some((i) => i.type === t))],
-    [items]
+    () => ["All", ...TYPES.filter((t) => listItems.some((i) => i.type === t))],
+    [listItems]
   );
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let r = items.filter((i) => {
+    let r = listItems.filter((i) => {
       if (type !== "All" && i.type !== type) return false;
       if (!q) return true;
       return (`${i.title} ${i.artist || ""} ${i.year || ""}`).toLowerCase().includes(q);
     });
     return r;
-  }, [items, query, type]);
+  }, [listItems, query, type]);
+
+  const wishlistCount = useMemo(
+    () => items.filter((i) => (i.list || "collection") === "wishlist").length,
+    [items]
+  );
 
   const totalGood = rows.reduce((s, i) => s + (Number(i.good_price) || 0), 0);
   const totalUsed = rows.reduce((s, i) => s + (Number(i.used_price) || 0), 0);
@@ -88,10 +100,11 @@ export default function Home() {
       </div>
     );
   } else if (!rows.length) {
+    const emptyList = list === "wishlist" ? "Your wish list is empty." : "No listings yet.";
     body = (
       <div className="empty">
-        <strong>{items.length ? `Nothing matches "${query}".` : "No listings yet."}</strong>
-        {items.length ? "Try fewer letters or another filter." : "Log in as the owner to add your first one."}
+        <strong>{listItems.length ? `Nothing matches "${query}".` : emptyList}</strong>
+        {listItems.length ? "Try fewer letters or another filter." : "Log in as the owner to add your first one."}
       </div>
     );
   } else if (sort === "value") {
@@ -106,8 +119,33 @@ export default function Home() {
     });
   }
 
+  function switchList(next) {
+    setList(next);
+    setType("All");
+    setQuery("");
+  }
+
   return (
     <>
+      {isConfigured && (
+        <div className="listtabs">
+          <button
+            className="listtab"
+            aria-pressed={list === "collection"}
+            onClick={() => switchList("collection")}
+          >
+            Collection
+          </button>
+          <button
+            className="listtab"
+            aria-pressed={list === "wishlist"}
+            onClick={() => switchList("wishlist")}
+          >
+            Wish list{wishlistCount ? ` (${wishlistCount})` : ""}
+          </button>
+        </div>
+      )}
+
       <div className="controls">
         <div className="searchwrap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
