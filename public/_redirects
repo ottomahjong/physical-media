@@ -1,4 +1,0 @@
-# Single-page-app routing for Cloudflare Pages.
-# Send every path to index.html so React Router can handle /listing/:id,
-# /admin, /login, etc. on a hard refresh or direct link.
-/*  /index.html  200
