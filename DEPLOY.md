@@ -63,6 +63,17 @@ run_sql db/seed.sql
 Both should return `[]` (success). The owner email is hard-coded in
 `db/schema.sql`; change it there if the owner ever changes.
 
+**Fresh project:** `schema.sql` is complete and idempotent — you do **not** need
+the files in `db/migrations/` (they're already folded into the schema).
+
+**Already-live database:** don't blindly re-seed. Instead apply any migrations
+the live DB hasn't seen yet, in order:
+```bash
+for m in db/migrations/[0-9]*.sql; do echo "applying $m"; run_sql "$m"; done
+```
+Each migration is idempotent, so this is safe to repeat. See
+`db/migrations/README.md` for the convention and a log of what each one does.
+
 ## 4. Create the Netlify site
 ```bash
 SITE_JSON=$(curl -s -X POST https://api.netlify.com/api/v1/sites \
