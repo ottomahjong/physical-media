@@ -87,12 +87,32 @@ async function lookupUpcItemDb(code) {
   };
 }
 
-// Look a barcode up across sources, music first. Returns a result object or a
-// soft "not found". Never throws for an empty match — only for hard failures
-// you might want to surface (which we still catch in the UI).
+// Try the server-side proxy first (the Cloudflare Worker at /api/barcode). It
+// does the same lookups without CORS limits and with a proper MusicBrainz
+// User-Agent. Returns the parsed result, or null if the proxy isn't there
+// (e.g. local `vite dev`, where /api/barcode serves the SPA HTML instead).
+async function lookupViaProxy(code) {
+  const res = await fetch("/api/barcode?code=" + encodeURIComponent(code), {
+    headers: { Accept: "application/json" },
+  });
+  const ct = res.headers.get("content-type") || "";
+  if (!res.ok || !ct.includes("application/json")) return null;
+  return res.json();
+}
+
+// Look a barcode up across sources, music first. Prefers the Worker proxy and
+// falls back to direct browser calls. Returns a result object or a soft "not
+// found"; hard failures are caught here so the UI never throws.
 export async function lookupBarcode(code) {
   const clean = String(code || "").replace(/\D/g, "");
   if (!clean) return { found: false };
+
+  try {
+    const viaProxy = await lookupViaProxy(clean);
+    if (viaProxy) return viaProxy;
+  } catch {
+    /* proxy unavailable — fall back to direct calls below */
+  }
 
   try {
     const music = await lookupMusicBrainz(clean);
