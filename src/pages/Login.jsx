@@ -39,7 +39,7 @@ export default function Login() {
       <h2>Owner login</h2>
       {sent ? (
         <p className="note">
-          ✓ Check your inbox at <b>{email}</b>. Tap the link in the email to sign in,
+          Check your inbox at <b>{email}</b>. Tap the link in the email to sign in,
           then you'll be able to add, edit, and remove listings.
         </p>
       ) : (
