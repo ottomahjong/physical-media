@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#143b3a" />
+<title>The Collection</title>
+<style>
+  :root{
+    --ink:#0f2e2d;--ink-2:#143b3a;--paper:#f3ece0;--paper-dim:#e4dac8;
+    --coral:#e0533d;--amber:#d99b2b;--green:#7fb5a8;
+    --line:rgba(243,236,224,.14);--card:#17403f;--card-line:rgba(243,236,224,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:var(--ink);color:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.4;padding-bottom:env(safe-area-inset-bottom);-webkit-font-smoothing:antialiased}
+  header{position:sticky;top:0;z-index:10;
+    background:linear-gradient(180deg,var(--ink) 60%,rgba(15,46,45,.96));
+    border-bottom:1px solid var(--line);padding:14px 16px 12px;
+    padding-top:calc(14px + env(safe-area-inset-top))}
+  .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .brand h1{font-size:1.55rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+  .brand .sub{font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:700}
+  .searchwrap{position:relative}
+  .searchwrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.55}
+  #q{width:100%;font-size:1.05rem;padding:14px 44px 14px 42px;border-radius:12px;
+    border:1px solid var(--line);background:var(--card);color:var(--paper);outline:none}
+  #q::placeholder{color:rgba(243,236,224,.45)}
+  #q:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(217,155,43,.22)}
+  .clearbtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;
+    color:var(--paper);opacity:.5;font-size:1.4rem;width:34px;height:34px;cursor:pointer;border-radius:8px}
+  .clearbtn:hover{opacity:.9}
+  .filters{display:flex;gap:8px;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:8px 14px;
+    border-radius:999px;cursor:pointer;background:transparent;color:var(--paper);
+    border:1px solid var(--line);white-space:nowrap}
+  .chip[aria-pressed="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .metabar{max-width:760px;margin:14px auto 0;padding:0 16px;display:flex;
+    align-items:center;justify-content:space-between;gap:12px}
+  .meta{font-size:.78rem;letter-spacing:.03em;color:rgba(243,236,224,.6);min-width:0}
+  .meta b{color:var(--amber);font-weight:700}
+  .sort{display:flex;gap:6px;flex:0 0 auto}
+  .sort .chip{padding:6px 10px;font-size:.7rem}
+  main{max-width:760px;margin:0 auto;padding:8px 16px 40px}
+  .group-label{font-size:.72rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--amber);margin:22px 2px 8px}
+  .item{display:flex;align-items:center;gap:12px;padding:13px 12px;border-bottom:1px solid var(--card-line)}
+  .tag{flex:0 0 auto;width:42px;text-align:center;font-size:.62rem;font-weight:800;letter-spacing:.05em;
+    padding:5px 0;border-radius:6px;border:1px solid currentColor}
+  .tag.VHS{color:var(--coral)}.tag.DVD{color:var(--amber)}.tag.CD{color:var(--green)}
+  .info{min-width:0;flex:1}
+  .title{font-size:1rem;font-weight:600}
+  .title .blank{color:var(--coral);font-style:italic;font-weight:500}
+  .by{font-size:.8rem;color:rgba(243,236,224,.55);margin-top:1px}
+  .val{flex:0 0 auto;text-align:right;font-variant-numeric:tabular-nums}
+  .val .good{font-size:.95rem;font-weight:700;color:var(--paper)}
+  .val .used{font-size:.72rem;color:rgba(243,236,224,.5);margin-top:1px}
+  .val .none{font-size:.8rem;color:rgba(243,236,224,.35)}
+  .empty{text-align:center;padding:56px 20px;color:rgba(243,236,224,.55)}
+  .empty strong{display:block;color:var(--paper);font-size:1.05rem;margin-bottom:6px}
+  mark{background:rgba(217,155,43,.35);color:var(--paper);border-radius:3px;padding:0 1px}
+  @media (prefers-reduced-motion:no-preference){.item{transition:background .12s}}
+  .item:active{background:rgba(243,236,224,.04)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>The Collection</h1><span class="sub">VHS · DVD · CD</span></div>
+  <div class="searchwrap">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="Search a title or studio…" aria-label="Search the collection" />
+    <button class="clearbtn" id="clear" aria-label="Clear search" hidden>×</button>
+  </div>
+  <div class="filters" id="filters" role="group" aria-label="Filter by format"></div>
+</header>
+
+<div class="metabar">
+  <p class="meta" id="meta"></p>
+  <div class="sort" id="sort" role="group" aria-label="Sort order">
+    <button class="chip" data-sort="az" aria-pressed="true">A–Z</button>
+    <button class="chip" data-sort="value" aria-pressed="false">Value</button>
+  </div>
+</div>
+<main id="list"></main>
+
+<script>
+/* ============================================================
+   1. LIVE DATA (optional)
+   Publish your Google Sheet as CSV (File ▸ Share ▸ Publish to web ▸ CSV)
+   and paste the URL here. Sheet headers must be:
+   Type, Title, Artist/Company, Year, Used $, Good $
+   ============================================================ */
+const SHEET_CSV_URL = "";
+
+/* ============================================================
+   2. BUILT-IN LIST  [Type, Title, Artist/Company, Year, Used$, Good$]
+   $ values are rough category placeholders — overwrite with real
+   eBay "Sold" prices. They are not appraisals.
+   ============================================================ */
+const SEED = [
+  // ---- VHS ----  (placeholder Used $1 / Good $3)
+  ["VHS","101 Dalmatians","Walt Disney","1961",1,3],
+  ["VHS","Aladdin","Walt Disney","1992",1,3],
+  ["VHS","Alice in Wonderland","Walt Disney","1951",1,3],
+  ["VHS","An American Tail","Universal / Amblin","1986",1,3],
+  ["VHS","Anastasia","20th Century Fox","1997",1,3],
+  ["VHS","Air Bud","Walt Disney","1997",1,3],
+  ["VHS","Air Bud (Disney Presents)","Walt Disney","1997",1,3],
+  ["VHS","Air Bud: World Pup","Walt Disney","2000",1,3],
+  ["VHS","Babe","Universal","1995",1,3],
+  ["VHS","Beauty and the Beast","Walt Disney","1991",1,3],
+  ["VHS","Blade Runner: The Director's Cut","Warner Bros.","1992",1,3],
+  ["VHS","Blue's Clues: Telling Time with Blue","Nickelodeon / Paramount","2002",1,3],
+  ["VHS","The Brave Little Toaster","Hyperion / Disney","1987",1,3],
+  ["VHS","The Brave Little Toaster (2nd copy)","Hyperion / Disney","1987",1,3],
+  ["VHS","Bring It On","Universal","2000",1,3],
+  ["VHS","Buck (horse film)","MCA / Universal","1995",1,3],
+  ["VHS","Casper","Universal","1995",1,3],
+  ["VHS","Charlotte's Web","Paramount","1973",1,3],
+  ["VHS","Cinderella","Walt Disney","1950",1,3],
+  ["VHS","Cinderella II: Dreams Come True","Walt Disney","2002",1,3],
+  ["VHS","Clifford the Big Red Dog: Clifford Tries His Best!","Scholastic","2001",1,3],
+  ["VHS","D2: The Mighty Ducks","Walt Disney","1994",1,3],
+  ["VHS","D3: The Mighty Ducks","Walt Disney","1996",1,3],
+  ["VHS","Dumbo","Walt Disney","1941",1,3],
+  ["VHS","The Easter Story Keepers","20th Century Fox","1998",1,3],
+  ["VHS","Fantasia","Walt Disney","1940",1,3],
+  ["VHS","The Fox and the Hound","Walt Disney","1981",1,3],
+  ["VHS","Free Willy","Warner Bros.","1993",1,3],
+  ["VHS","A Goofy Movie","Walt Disney","1995",1,3],
+  ["VHS","The Great Mouse Detective","Walt Disney","1986",1,3],
+  ["VHS","Homeward Bound: The Incredible Journey","Walt Disney","1993",1,3],
+  ["VHS","Homeward Bound II: Lost in San Francisco","Walt Disney","1996",1,3],
+  ["VHS","Hook","TriStar / Columbia","1991",1,3],
+  ["VHS","It Takes Two","Warner Bros.","1995",1,3],
+  ["VHS","James and the Giant Peach","Walt Disney","1996",1,3],
+  ["VHS","Jingle All the Way","20th Century Fox","1996",1,3],
+  ["VHS","The Jungle Book","Walt Disney","1967",1,3],
+  ["VHS","A Kid in King Arthur's Court","Walt Disney","1995",1,3],
+  ["VHS","Lady and the Tramp","Walt Disney","1955",1,3],
+  ["VHS","The Lion King","Walt Disney","1994",1,3],
+  ["VHS","The Little Mermaid","Walt Disney","1989",1,3],
+  ["VHS","Madeline and the Easter Bonnet","Sony Wonder","1996",1,3],
+  ["VHS","Mary Poppins","Walt Disney","1964",1,3],
+  ["VHS","Mickey's Magical Christmas: Snowed In at the House of Mouse","Walt Disney","2001",1,3],
+  ["VHS","The Mighty Ducks","Walt Disney","1992",1,3],
+  ["VHS","Monsters, Inc.","Disney / Pixar","2001",1,3],
+  ["VHS","Muppet Treasure Island","Walt Disney / Jim Henson","1996",1,3],
+  ["VHS","Muppet Treasure Island (2nd copy)","Walt Disney / Jim Henson","1996",1,3],
+  ["VHS","Now and Then","New Line","1995",1,3],
+  ["VHS","Once Upon a Forest","20th Century Fox","1993",1,3],
+  ["VHS","The Parent Trap","Walt Disney","1998",1,3],
+  ["VHS","Peter Pan (Special Edition)","Walt Disney","1953",1,3],
+  ["VHS","Pinocchio","Walt Disney","1940",1,3],
+  ["VHS","Pocahontas (Masterpiece)","Walt Disney","1995",1,3],
+  ["VHS","Pocahontas (Gold Collection)","Walt Disney","1995",1,3],
+  ["VHS","Pooh's Grand Adventure: The Search for Christopher Robin","Walt Disney","1997",1,3],
+  ["VHS","Pooh's Grand Adventure (2nd copy)","Walt Disney","1997",1,3],
+  ["VHS","The Rescuers Down Under","Walt Disney","1990",1,3],
+  ["VHS","Richie Rich","Warner Bros.","1994",1,3],
+  ["VHS","Rookie of the Year","20th Century Fox","1993",1,3],
+  ["VHS","The Sandlot","20th Century Fox","1993",1,3],
+  ["VHS","Sleeping Beauty","Walt Disney","1959",1,3],
+  ["VHS","Snow White and the Seven Dwarfs","Walt Disney","1937",1,3],
+  ["VHS","Tales of Beatrix Potter","Family Home Entertainment","1995",1,3],
+  ["VHS","Tarzan","Walt Disney","1999",1,3],
+  ["VHS","Teenage Mutant Ninja Turtles: The Great Boldini","Family Home Entertainment","1990",1,3],
+  ["VHS","Teenage Mutant Ninja Turtles II: The Secret of the Ooze","New Line","1991",1,3],
+  ["VHS","Tom and Huck","Walt Disney","1995",1,3],
+  ["VHS","Toy Story","Disney / Pixar","1995",1,3],
+  ["VHS","Toy Story 2","Disney / Pixar","1999",1,3],
+  ["VHS","Wild America","Warner Bros.","1997",1,3],
+  ["VHS","Winnie the Pooh: ...And Christmas Too","Walt Disney","1991",1,3],
+  ["VHS","Winnie the Pooh: Newfound Friends","Walt Disney","1998",1,3],
+  ["VHS","","","","",""],
+
+  // ---- DVD ----  (Disney $3/$6, Pixar $4/$8, kids $2/$4)
+  ["DVD","All-Star Alphabet (Sesame Street)","Sony Wonder","2005",2,4],
+  ["DVD","The Best of Elmo (Sesame Street)","Sony Wonder","1994",2,4],
+  ["DVD","Cars","Disney / Pixar","2006",4,8],
+  ["DVD","Dora Celebrates Three Kings Day!","Nickelodeon","2005",2,4],
+  ["DVD","Elf","New Line","2003",3,6],
+  ["DVD","Elmo Visits the Firehouse (Sesame Street)","Sony Wonder","2002",2,4],
+  ["DVD","Elmo's World (Sesame Street)","Sony Wonder","2000",2,4],
+  ["DVD","Elmo's World: Pets! (Sesame Street)","Sony Wonder","2006",2,4],
+  ["DVD","Frozen","Walt Disney","2013",4,7],
+  ["DVD","The Great Numbers Game (Sesame Street)","Sesame Workshop","2009",2,4],
+  ["DVD","Home Alone","20th Century Fox","1990",3,6],
+  ["DVD","Home Alone 2: Lost in New York","20th Century Fox","1992",3,6],
+  ["DVD","The Incredibles","Disney / Pixar","2004",4,8],
+  ["DVD","Learning About Numbers Double Feature (Sesame Street)","Sesame Workshop","2007",2,4],
+  ["DVD","Learning About Numbers Double Feature (2nd copy)","Sesame Workshop","2007",2,4],
+  ["DVD","The Lord of the Rings (Widescreen)","New Line","2001",3,6],
+  ["DVD","The Many Adventures of Winnie the Pooh (Friendship Edition)","Walt Disney","1977",3,6],
+  ["DVD","Minnie's Masquerade (Mickey Mouse Clubhouse)","Walt Disney","2011",2,4],
+  ["DVD","Mrs. Doubtfire (Behind-the-Seams Edition)","20th Century Fox","1993",3,6],
+  ["DVD","Pooh's Grand Adventure: The Search for Christopher Robin","Walt Disney","1997",3,6],
+  ["DVD","Ready for School! (Sesame Street)","Sesame Workshop","2009",2,4],
+  ["DVD","Toy Story 3","Disney / Pixar","2010",4,8],
+
+  // ---- CD ----  (placeholder $2/$4)
+  ["CD","Stunt","Barenaked Ladies","1998",2,4],
+  ["CD","Breakaway","Kelly Clarkson","2004",2,4],
+  ["CD","A New Day Has Come","Celine Dion","2002",2,4],
+  ["CD","Home","Dixie Chicks","2002",2,4],
+  ["CD","Faith","Faith Hill","1998",2,4],
+  ["CD","Now That's What I Call Music! 42","Various Artists","2012",2,4],
+  ["CD","Savage Garden","Savage Garden","1997",2,4],
+  ["CD","...Baby One More Time","Britney Spears","1999",2,4],
+];
+
+/* ============================================================  App  */
+const TYPE_ORDER=["VHS","DVD","CD"];
+let items=[],activeType="All",query="",sortMode="az";
+const $list=document.getElementById("list"),$meta=document.getElementById("meta"),
+  $q=document.getElementById("q"),$clear=document.getElementById("clear"),
+  $filters=document.getElementById("filters"),$sort=document.getElementById("sort");
+
+const money=n=>n||n===0?Number(n):null;
+function toItems(rows){
+  return rows.filter(r=>r&&r[1]!==undefined).map(r=>({
+    type:(r[0]||"").toString().trim().toUpperCase(),
+    title:(r[1]||"").toString().trim(),
+    artist:(r[2]||"").toString().trim(),
+    year:(r[3]||"").toString().trim(),
+    used:parsePrice(r[4]),
+    good:parsePrice(r[5])
+  }));
+}
+function parsePrice(v){
+  if(v===undefined||v===null) return null;
+  const s=v.toString().replace(/[^0-9.]/g,"");
+  if(s==="") return null;
+  const n=parseFloat(s); return isNaN(n)?null:n;
+}
+function fmt(n){return "$"+n.toLocaleString(undefined,{maximumFractionDigits:n%1?2:0});}
+
+function parseCSV(text){
+  const rows=[];let row=[],cell="",inQ=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else inQ=false;}else cell+=c;}
+    else{if(c==='"')inQ=true;else if(c===','){row.push(cell);cell="";}
+      else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell="";}
+      else if(c==='\r'){}else cell+=c;}}
+  if(cell.length||row.length){row.push(cell);rows.push(row);}return rows;
+}
+function fromSheet(text){
+  const rows=parseCSV(text).filter(r=>r.some(c=>c.trim()!==""));
+  if(!rows.length)return[];
+  const head=rows[0].map(c=>c.toLowerCase());
+  const hasHeader=head.some(c=>c.includes("title")||c.includes("type"));
+  return toItems(hasHeader?rows.slice(1):rows);
+}
+function esc(s){return s.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
+function hl(text,q){const t=esc(text);if(!q)return t;
+  try{const re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig");
+    return t.replace(re,"<mark>$1</mark>");}catch(e){return t;}}
+
+function buildFilters(){
+  const types=["All",...TYPE_ORDER.filter(t=>items.some(i=>i.type===t))];
+  $filters.innerHTML="";
+  types.forEach(t=>{const b=document.createElement("button");b.className="chip";
+    b.textContent=t;b.setAttribute("aria-pressed",t===activeType);
+    b.onclick=()=>{activeType=t;buildFilters();render();};$filters.appendChild(b);});
+}
+$sort.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  sortMode=b.dataset.sort;
+  $sort.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.sort===sortMode));
+  render();
+});
+
+function render(){
+  const q=query.trim().toLowerCase();
+  let rows=items.filter(i=>{
+    if(activeType!=="All"&&i.type!==activeType)return false;
+    if(!q)return true;
+    return (i.title+" "+i.artist+" "+i.year).toLowerCase().includes(q);
+  });
+
+  const totalGood=rows.reduce((s,i)=>s+(i.good||0),0);
+  const totalUsed=rows.reduce((s,i)=>s+(i.used||0),0);
+  $meta.innerHTML=`${rows.length} items · est. <b>${fmt(totalGood)}</b> good · ${fmt(totalUsed)} used`;
+
+  if(!rows.length){
+    $list.innerHTML=`<div class="empty"><strong>Nothing matches “${esc(query)}”.</strong>Try fewer letters, or check the format filter above.</div>`;return;}
+
+  const sortKey=s=>s.replace(/^(the|a|an)\s+/i,"").toLowerCase();
+  const byValue=(a,b)=>(b.good||0)-(a.good||0)||sortKey(a.title).localeCompare(sortKey(b.title));
+  const byAZ=(a,b)=>sortKey(a.title).localeCompare(sortKey(b.title));
+
+  let html="";
+  const renderRows=arr=>arr.map(i=>{
+    const title=i.title?hl(i.title,q):`<span class="blank">— blank — fill in —</span>`;
+    const sub=[i.artist?hl(i.artist,q):"",i.year?hl(i.year,q):""].filter(Boolean).join(" · ");
+    const val=i.good!=null||i.used!=null
+      ?`<span class="val"><span class="good">${i.good!=null?fmt(i.good):"—"}</span><span class="used">used ${i.used!=null?fmt(i.used):"—"}</span></span>`
+      :`<span class="val"><span class="none">—</span></span>`;
+    return `<div class="item"><span class="tag ${i.type}">${i.type}</span>
+      <span class="info"><span class="title">${title}</span>${sub?`<span class="by">${sub}</span>`:""}</span>${val}</div>`;
+  }).join("");
+
+  if(sortMode==="value"&&activeType==="All"){
+    html=renderRows(rows.slice().sort(byValue));
+  } else if(sortMode==="value"){
+    html=renderRows(rows.slice().sort(byValue));
+  } else {
+    TYPE_ORDER.forEach(type=>{
+      const g=rows.filter(r=>r.type===type).sort(byAZ);
+      if(!g.length)return;
+      if(activeType==="All")html+=`<div class="group-label">${type}</div>`;
+      html+=renderRows(g);
+    });
+  }
+  $list.innerHTML=html;
+}
+
+$q.addEventListener("input",e=>{query=e.target.value;$clear.hidden=query.length===0;render();});
+$clear.addEventListener("click",()=>{query="";$q.value="";$clear.hidden=true;$q.focus();render();});
+
+async function boot(){
+  items=toItems(SEED);
+  if(SHEET_CSV_URL){
+    try{const res=await fetch(SHEET_CSV_URL,{cache:"no-store"});
+      if(res.ok){const live=fromSheet(await res.text());if(live.length)items=live;}}catch(e){}
+  }
+  buildFilters();render();
+}
+boot();
+</script>
+</body>
+</html>

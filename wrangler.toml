@@ -1,0 +1,15 @@
+# Cloudflare Workers config.
+# This site is a prebuilt Vite SPA (dist/) served as static assets. A small
+# Worker script (worker/index.js) sits in front to add one API route,
+# /api/barcode, for server-side barcode lookups (avoids browser CORS). All
+# other requests fall through to the static assets via the ASSETS binding.
+name = "keddy-media"
+compatibility_date = "2026-06-01"
+main = "worker/index.js"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# Serve index.html for unknown paths so React Router handles /listing/:id,
+# /admin, /login, etc. on a hard refresh or direct link.
+not_found_handling = "single-page-application"
