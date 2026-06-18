@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { uploadImage, TYPES, CONDITIONS, STATUSES, DEFAULT_LIST, artistLabel } from "../data.js";
+import { lookupBarcode } from "../barcode.js";
+
+// The camera scanner pulls in the (heavy) zxing library, so load it on demand
+// only when the owner opens it — visitors never download it.
+const BarcodeScanner = lazy(() => import("./BarcodeScanner.jsx"));
 
 const empty = {
   type: "VHS",
@@ -21,8 +26,46 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [code, setCode] = useState("");
+  const [looking, setLooking] = useState(false);
+  const [scanMsg, setScanMsg] = useState(null);
 
   const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
+
+  // Fill the form from a barcode. Only overwrites fields the lookup returns,
+  // and leaves anything you've already typed if the source has nothing for it.
+  async function lookup(rawCode) {
+    const c = String(rawCode || "").replace(/\D/g, "");
+    if (!c) return;
+    setLooking(true);
+    setScanMsg(null);
+    try {
+      const r = await lookupBarcode(c);
+      if (r.found) {
+        setV((cur) => ({
+          ...cur,
+          type: r.fields.type || cur.type,
+          title: r.fields.title || cur.title,
+          artist: r.fields.artist || cur.artist,
+          year: r.fields.year || cur.year,
+        }));
+        setScanMsg(`Found “${r.fields.title}” via ${r.source}. Check the details, then Save.`);
+      } else {
+        setScanMsg(`No match for ${c}. Enter the details by hand.`);
+      }
+    } catch {
+      setScanMsg("Lookup failed — enter the details by hand.");
+    } finally {
+      setLooking(false);
+    }
+  }
+
+  function onScanned(scanned) {
+    setScanning(false);
+    setCode(scanned.replace(/\D/g, ""));
+    lookup(scanned);
+  }
 
   async function pickImage(e) {
     const file = e.target.files?.[0];
@@ -67,6 +110,32 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
   return (
     <form className="lform" onSubmit={submit}>
+      {scanning && (
+        <Suspense fallback={<div className="scanoverlay"><div className="scanbox"><p className="scanhint">Starting camera…</p></div></div>}>
+          <BarcodeScanner onDetected={onScanned} onClose={() => setScanning(false)} />
+        </Suspense>
+      )}
+
+      <div className="scanrow">
+        <button type="button" className="btn ghost" onClick={() => { setScanMsg(null); setScanning(true); }}>
+          Scan barcode
+        </button>
+        <div className="scaninput">
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="…or type a UPC/EAN"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(code); } }}
+          />
+          <button type="button" className="btn" onClick={() => lookup(code)} disabled={looking || !code.trim()}>
+            {looking ? "Looking…" : "Look up"}
+          </button>
+        </div>
+      </div>
+      {scanMsg && <p className="scanmsg">{scanMsg}</p>}
+
       <div className="imgrow">
         <div className="imgbox">
           {v.image_url ? (

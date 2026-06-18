@@ -171,6 +171,24 @@ main{max-width:760px;margin:0 auto;padding:14px 16px 64px}
 .notes{background:var(--ti-cream);border-radius:var(--radius-md);padding:14px;font-size:.92rem;
   color:var(--ti-ink-soft);white-space:pre-wrap;margin-bottom:16px;line-height:1.55}
 
+/* ---------- barcode scan ---------- */
+.scanrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.scaninput{display:flex;gap:8px;flex:1;min-width:200px}
+.scaninput input{flex:1;font-family:var(--font-body);font-size:1rem;padding:12px 14px;
+  border-radius:var(--radius-md);border:1px solid var(--border);background:var(--ti-paper);color:var(--ti-ink);outline:none}
+.scaninput input:focus{border-color:var(--ti-ink)}
+.scanmsg{font-size:.86rem;color:var(--ti-harakeke);margin:0 0 6px;line-height:1.5}
+.scanoverlay{position:fixed;inset:0;z-index:50;background:rgba(14,31,44,.82);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.scanbox{width:100%;max-width:440px;background:var(--ti-bone);border-radius:var(--radius-lg);
+  padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.scanstage{position:relative;width:100%;display:flex}
+.scanvideo{width:100%;border-radius:var(--radius-md);background:#000;aspect-ratio:4/3;object-fit:cover}
+.scanframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:74%;height:34%;border:2px solid var(--ti-bone);border-radius:var(--radius-md);pointer-events:none}
+.scanhint{font-size:.84rem;color:var(--ti-ink-muted);text-align:center;margin:0}
+.btn--scanclose{align-self:stretch;justify-content:center}
+
 /* ---------- panels & forms ---------- */
 .panel{background:var(--ti-paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:6px 0 18px}
 .panel h2,.panel h3{font-family:var(--font-display);font-weight:400;letter-spacing:-.01em;margin-bottom:14px;color:var(--ti-ink)}
