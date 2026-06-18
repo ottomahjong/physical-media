@@ -1,0 +1,12 @@
+# Cloudflare Workers static-assets config.
+# This site is a prebuilt Vite SPA: `npm run build` emits dist/, and we deploy
+# that folder as static assets. Declaring assets here stops `wrangler deploy`
+# from trying to auto-configure Vite (which would require Vite >= 6).
+name = "keddy-media"
+compatibility_date = "2026-06-01"
+
+[assets]
+directory = "./dist"
+# Serve index.html for unknown paths so React Router handles /listing/:id,
+# /admin, /login, etc. on a hard refresh or direct link.
+not_found_handling = "single-page-application"

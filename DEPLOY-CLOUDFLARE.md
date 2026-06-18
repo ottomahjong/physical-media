@@ -18,9 +18,17 @@ build, so migrating hosts is low-risk and changes nothing in the database.
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 
-SPA routing is already handled by `public/_redirects` (Vite copies it into
-`dist/`), so deep links like `/listing/123` and a hard refresh on `/admin`
-work.
+SPA routing is handled two ways (either is enough): `public/_redirects` (Vite
+copies it into `dist/`) and `not_found_handling = "single-page-application"` in
+`wrangler.toml`. So deep links like `/listing/123` and a hard refresh on
+`/admin` work.
+
+**If Cloudflare created a *Worker* (not a classic Pages site):** the deploy
+command is `npx wrangler deploy`, and the repo's `wrangler.toml` tells it to
+deploy the prebuilt `dist/` as static assets. This avoids the
+"Vite 5 cannot be automatically configured / update to Vite >= 6" deploy error
+you hit when there's no wrangler config. The `name` in `wrangler.toml` must
+match your Worker's name so it deploys to the same project.
 
 ## 3. Environment variables
 Add these under **Settings → Environment variables → Production** (same values
