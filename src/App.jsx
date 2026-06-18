@@ -7,7 +7,7 @@ import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 
 function Header() {
-  const { isOwner, email, signOut } = useAuth();
+  const { isOwner, signOut } = useAuth();
   const navigate = useNavigate();
   return (
     <header>
@@ -32,7 +32,6 @@ function Header() {
           )}
         </nav>
       </div>
-      {isOwner && <div className="ownerband">Signed in as {email} — you can edit listings</div>}
     </header>
   );
 }

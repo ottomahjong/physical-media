@@ -4,6 +4,7 @@ import { fetchListing, updateListing, deleteListing, formatMoney } from "../data
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
+import { CategoryPill } from "../components/MediaBits.jsx";
 
 export default function Listing() {
   const { id } = useParams();
@@ -69,7 +70,7 @@ export default function Listing() {
         </div>
         <div className="detailinfo">
           <span className="tags">
-            <span className={"tag t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type}</span>
+            <CategoryPill type={item.type} />
             {(item.list || "collection") === "wishlist" && <span className="tag wish">Wish list</span>}
           </span>
           <h2>{item.title}</h2>

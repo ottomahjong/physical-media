@@ -49,7 +49,7 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
 body{background:var(--ti-bone);color:var(--ti-ink);
   font-family:var(--font-body);font-size:16px;
   line-height:1.55;padding-bottom:env(safe-area-inset-bottom);
@@ -75,16 +75,14 @@ nav{display:flex;gap:8px;flex:0 0 auto}
 .navbtn:hover{background:transparent;color:var(--ti-ink)}
 .navbtn.ghost{background:transparent;color:var(--ti-ink);border-color:var(--ti-ink)}
 .navbtn.ghost:hover{background:var(--ti-ink);color:var(--ti-bone)}
-.ownerband{max-width:1180px;margin:10px auto 0;font-size:.74rem;color:var(--ti-harakeke);
-  background:rgba(140,160,138,.16);border:1px solid rgba(63,90,69,.22);
-  padding:7px 14px;border-radius:var(--radius-md)}
-
-main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 
 /* Reading-width pages stay narrow and centered even on a wide screen; only the
    inventory table uses the full width. */
-.panel,.detail,.admin{max-width:720px;margin-left:auto;margin-right:auto}
-.controls,.listtabs,.metabar{max-width:760px}
+.panel,.detail{max-width:720px;margin-left:auto;margin-right:auto}
+.admin{width:100%}
+.metabar{width:100%;max-width:none}
+.controls,.listtabs{width:100%;max-width:none}
 
 /* ---------- list tabs (collection / wish list) ---------- */
 .listtabs{display:flex;gap:4px;margin-top:14px;background:var(--ti-cream);border:1px solid var(--border);
@@ -116,7 +114,7 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 .metabar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
 .meta{font-size:.78rem;letter-spacing:.02em;color:var(--ti-ink-muted)}
 .meta b{color:var(--ti-ocean);font-weight:600}
-.sort{display:flex;gap:6px}
+.sort{display:flex;gap:6px;margin-left:auto}
 .sort .chip{padding:7px 12px;font-size:.72rem}
 
 /* ---------- list ---------- */
@@ -126,12 +124,22 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 .item{display:flex;align-items:center;gap:14px;padding:13px 8px;border-bottom:1px solid var(--rule);
   transition:background .15s;border-radius:var(--radius-md)}
 .item:hover{background:var(--ti-paper)}
-.thumb{flex:0 0 auto;width:50px;height:50px;border-radius:var(--radius-md);object-fit:cover;background:var(--ti-cream)}
+.thumb{flex:0 0 auto;border-radius:var(--radius-sm);object-fit:cover;background:var(--ti-cream);
+  box-shadow:0 1px 1px rgba(14,31,44,.08)}
+.thumb--table{width:44px;height:44px}
+.thumb--table.t-VHS,.thumb--table.t-DVD,.thumb--table.t-Cassette,.thumb--table.t-Bluray{width:42px;height:56px}
+.thumb--table.t-CD{width:46px;height:46px}
+.thumb--table.t-Vinyl{width:46px;height:46px;border-radius:50%}
+.thumb--form{width:64px;height:64px}
+.thumb--form.t-VHS,.thumb--form.t-DVD,.thumb--form.t-Cassette,.thumb--form.t-Bluray{width:54px;height:72px}
+.thumb--form.t-CD{width:68px;height:68px}
+.thumb--form.t-Vinyl{width:68px;height:68px;border-radius:50%}
 .thumb.placeholder{display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:600;
   letter-spacing:.04em;color:var(--ti-bone);text-transform:uppercase}
 .placeholder.t-VHS{background:var(--ti-terracotta);color:var(--ti-bone)}
 .placeholder.t-DVD{background:var(--ti-ocean);color:var(--ti-bone)}
 .placeholder.t-CD{background:var(--ti-harakeke);color:var(--ti-bone)}
+.placeholder.t-Cassette{background:var(--ti-saffron);color:var(--ti-ink)}
 .placeholder.t-Bluray{background:var(--ti-mist);color:var(--ti-ink)}
 .placeholder.t-Vinyl{background:var(--ti-ink);color:var(--ti-bone)}
 .placeholder{background:var(--ti-stone);color:var(--ti-bone)}
@@ -160,11 +168,6 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 .detailinfo{padding:24px}
 .tag{display:inline-block;font-family:var(--font-body);font-size:.6rem;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;padding:4px 10px;border-radius:var(--radius-sm);background:var(--ti-ink);color:var(--ti-bone)}
-.tag.t-VHS{background:var(--ti-terracotta)}
-.tag.t-DVD{background:var(--ti-ocean)}
-.tag.t-CD{background:var(--ti-harakeke)}
-.tag.t-Bluray{background:var(--ti-mist);color:var(--ti-ink)}
-.tag.t-Vinyl{background:var(--ti-ink)}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
 .tag.wish{background:transparent;border:1px solid var(--ti-terracotta);color:var(--ti-terracotta)}
 .detailinfo h2{font-family:var(--font-display);font-size:2rem;font-weight:400;letter-spacing:-.02em;
@@ -195,7 +198,7 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 .btn--scanclose{align-self:stretch;justify-content:center}
 
 /* ---------- panels & forms ---------- */
-.panel{background:var(--ti-paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:6px 0 18px}
+.panel{background:var(--ti-paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:6px auto 18px}
 .panel h2,.panel h3{font-family:var(--font-display);font-weight:400;letter-spacing:-.01em;margin-bottom:14px;color:var(--ti-ink)}
 .note{font-size:.9rem;color:var(--ti-ink-muted);margin-bottom:16px;line-height:1.55}
 .lform label,.panel label{display:block;font-family:var(--font-body);font-size:.68rem;font-weight:500;letter-spacing:.16em;
@@ -208,10 +211,14 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 .seg{display:flex;gap:8px;margin-bottom:4px}
 .seg .chip{flex:1;text-align:center;justify-content:center}
 .imgrow{display:flex;gap:16px;align-items:center;margin-bottom:6px}
-.imgbox{width:90px;height:90px;border-radius:var(--radius-md);background:var(--ti-cream);border:1px solid var(--border);
+.imgbox{width:76px;min-height:76px;border-radius:var(--radius-md);background:var(--ti-cream);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;font-size:.7rem;color:var(--ti-ink-muted)}
 .imgbox img{width:100%;height:100%;object-fit:cover}
-.imgactions{display:flex;flex-direction:column;gap:8px}
+.imgactions{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.imgdrop{display:flex;align-items:center;gap:14px;min-height:102px;padding:12px;border:1px dashed var(--border-strong);
+  border-radius:var(--radius-md);background:rgba(251,248,241,.68);outline:none;transition:background .2s var(--ease),border-color .2s var(--ease)}
+.imgdrop.is-dragging,.imgdrop:focus-visible{background:var(--ti-cream);border-color:var(--ti-ocean)}
+.dropcopy{font-size:.78rem;line-height:1.35;color:var(--ti-ink-muted)}
 
 /* Scan / Upload as two equal boxes, aligned over the Collection / Wish list
    tabs that follow. */
@@ -220,7 +227,6 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
   border:1px solid var(--border);border-radius:var(--radius-md);background:var(--ti-paper)}
 .formbox > label{margin:0}
 .formbox .imgrow{margin:0;gap:12px}
-.formbox .imgbox{width:60px;height:60px}
 .btn--block{display:flex;width:100%}
 .scaninput{display:flex;gap:6px;flex-wrap:wrap}
 .scaninput input{flex:1;min-width:0}
@@ -257,23 +263,42 @@ main{max-width:1180px;margin:0 auto;padding:14px 16px 64px}
 
 /* ---------- inventory table ---------- */
 .tablewrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.ctable{width:100%;border-collapse:collapse;font-family:var(--font-body);font-size:.92rem}
+.ctable{width:100%;min-width:980px;border-collapse:collapse;font-family:var(--font-body);font-size:.92rem;table-layout:fixed}
 .ctable thead th{font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   color:var(--ti-ink-muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ctable th.num,.ctable td.num{text-align:right;font-variant-numeric:tabular-nums}
-.ctable tbody td{padding:11px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+.ctable tbody td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
 .crow{cursor:pointer;transition:background .15s}
 .crow:hover{background:var(--ti-paper)}
-.col-thumb{width:58px}
-.ctable .thumb{width:44px;height:44px}
+.col-thumb{width:68px}
+.ctable th:nth-child(1),.ctable td:nth-child(1){width:68px}
+.ctable th:nth-child(2),.ctable td:nth-child(2){width:25%}
+.ctable th:nth-child(3),.ctable td:nth-child(3){width:23%}
+.ctable th:nth-child(4),.ctable td:nth-child(4){width:7%}
+.ctable th:nth-child(5),.ctable td:nth-child(5){width:9%}
+.ctable th:nth-child(6),.ctable td:nth-child(6){width:9%}
+.ctable th:nth-child(7),.ctable td:nth-child(7){width:10%}
+.ctable th:nth-child(8),.ctable td:nth-child(8){width:9%}
+.ctable th:nth-child(9),.ctable td:nth-child(9){width:9%}
+.ctable th:nth-child(10),.ctable td:nth-child(10){width:5%}
 .ctitle{font-weight:500;color:var(--ti-ink)}
+.ctitle,.cby{overflow:hidden;text-overflow:ellipsis}
 .cby{color:var(--ti-ink-soft)}
 .cval{font-weight:600;color:var(--ti-ink)}
+.typepill{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:4px 8px;
+  border-radius:var(--radius-sm);font-size:.6rem;font-weight:700;letter-spacing:.12em;line-height:1;
+  text-transform:uppercase;color:var(--ti-bone);background:var(--ti-stone)}
+.typepill.t-VHS{background:var(--ti-terracotta)}
+.typepill.t-DVD{background:var(--ti-ocean)}
+.typepill.t-CD{background:var(--ti-harakeke)}
+.typepill.t-Cassette{background:var(--ti-saffron);color:var(--ti-ink)}
+.typepill.t-Bluray{background:var(--ti-mist);color:var(--ti-ink)}
+.typepill.t-Vinyl{background:var(--ti-ink)}
 
-/* Mobile: a leaner on-the-go view — only Title, Artist/Studio, Est. Value, Qty. */
+/* Mobile: a leaner on-the-go view — only Title, Artists/Studio, Est. Value, Qty. */
 @media (max-width:680px){
   .colhide{display:none}
-  .ctable{font-size:.95rem}
+  .ctable{font-size:.95rem;min-width:0;table-layout:auto}
   .ctable thead th,.ctable tbody td{padding:11px 8px}
   .topboxes{gap:10px}
   .formbox{padding:10px}
