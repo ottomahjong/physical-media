@@ -18,27 +18,36 @@ build, so migrating hosts is low-risk and changes nothing in the database.
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 
-SPA routing is handled two ways (either is enough): `public/_redirects` (Vite
-copies it into `dist/`) and `not_found_handling = "single-page-application"` in
-`wrangler.toml`. So deep links like `/listing/123` and a hard refresh on
-`/admin` work.
+SPA routing is handled by `not_found_handling = "single-page-application"` in
+`wrangler.toml`, so deep links like `/listing/123` and a hard refresh on
+`/admin` work. (We do NOT use a `_redirects` file — the Workers asset deployer
+rejects a `/* /index.html 200` rule as an infinite loop.)
 
-**If Cloudflare created a *Worker* (not a classic Pages site):** the deploy
+**This project deploys as a *Worker* (not a classic Pages site):** the deploy
 command is `npx wrangler deploy`, and the repo's `wrangler.toml` tells it to
 deploy the prebuilt `dist/` as static assets. This avoids the
 "Vite 5 cannot be automatically configured / update to Vite >= 6" deploy error
-you hit when there's no wrangler config. The `name` in `wrangler.toml` must
+you get when there's no wrangler config. The `name` in `wrangler.toml` must
 match your Worker's name so it deploys to the same project.
 
-## 3. Environment variables
-Add these under **Settings → Environment variables → Production** (same values
-you used on Netlify):
+## 3. Environment variables (BUILD-time — this is the common gotcha)
+Because this is a static SPA, Vite bakes these values into the JS during
+`npm run build`. They must be set as **build** variables, NOT (only) as the
+Worker's runtime variables — a static site can't read runtime vars.
+
+In the Worker → **Settings → Build → Variables and secrets** (the build
+section, not the runtime one), add:
 
 - `VITE_SUPABASE_URL`  → `https://<your-project-ref>.supabase.co`
-- `VITE_SUPABASE_ANON_KEY` → your project's **anon** key
+- `VITE_SUPABASE_ANON_KEY` → your project's **anon / publishable** key
 
-(These are read at build time. Re-deploy after adding them if the first build
-ran without them.)
+The anon key is a long JWT that starts with `eyJ...` (or a newer
+`sb_publishable_...` key). It is meant to be public — it ships in the browser
+bundle and is safe to expose; Row Level Security is what protects your data.
+(Don't use the `service_role` key or an `sbp_...` personal access token here.)
+
+Re-deploy after setting them. You can confirm they took effect: the built
+`dist/assets/index-*.js` filename hash will change once the keys are embedded.
 
 ## 4. Deploy
 Click **Save and Deploy**. You'll get a free URL like
