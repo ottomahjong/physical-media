@@ -24,6 +24,7 @@ Supabase dashboard → **SQL Editor** → paste the file's contents → **Run**.
 
 ## Log
 
-| #    | File                        | What it does                                              |
-|------|-----------------------------|-----------------------------------------------------------|
-| 0001 | `0001_add_list_column.sql`  | Adds the `list` column (collection vs. wish list).        |
+| #    | File                            | What it does                                              |
+|------|---------------------------------|-----------------------------------------------------------|
+| 0001 | `0001_add_list_column.sql`      | Adds the `list` column (collection vs. wish list).        |
+| 0002 | `0002_open_write_policies.sql`  | Opens write/upload RLS (app now owns the login gate).     |

@@ -1,5 +1,5 @@
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
-import { AuthProvider, useAuth, signOut } from "./auth.jsx";
+import { AuthProvider, useAuth } from "./auth.jsx";
 import { isConfigured } from "./supabaseClient.js";
 import Home from "./pages/Home.jsx";
 import Listing from "./pages/Listing.jsx";
@@ -7,14 +7,14 @@ import Admin from "./pages/Admin.jsx";
 import Login from "./pages/Login.jsx";
 
 function Header() {
-  const { isOwner, email } = useAuth();
+  const { isOwner, email, signOut } = useAuth();
   const navigate = useNavigate();
   return (
     <header>
       <div className="bar">
         <Link to="/" className="brand">
-          <h1>The Collection</h1>
-          <span className="sub">VHS · DVD · CD</span>
+          <h1>Keddy Media</h1>
+          <span className="sub">Inventory</span>
         </Link>
         <nav>
           {isOwner ? (
@@ -22,7 +22,7 @@ function Header() {
               <Link to="/admin" className="navbtn">Manage</Link>
               <button
                 className="navbtn ghost"
-                onClick={async () => { await signOut(); navigate("/"); }}
+                onClick={() => { signOut(); navigate("/"); }}
               >
                 Sign out
               </button>

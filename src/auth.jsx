@@ -1,29 +1,41 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { supabase, OWNER_EMAIL, isConfigured } from "./supabaseClient.js";
+import { createContext, useContext, useState } from "react";
+import { OWNER_EMAIL, OWNER_PASSWORD } from "./supabaseClient.js";
 
-const AuthContext = createContext({ session: null, isOwner: false, ready: true });
+// Simple front-door auth. We no longer use Supabase magic links — sign-in is a
+// local email + password check against the owner credentials, remembered in
+// localStorage. This is a deliberate, low-security barrier for a personal
+// project (see the note in supabaseClient.js).
+const KEY = "keddy_owner";
+
+const AuthContext = createContext({ isOwner: false, ready: true, email: null });
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-  const [ready, setReady] = useState(!isConfigured);
+  const [isOwner, setIsOwner] = useState(() => {
+    try {
+      return localStorage.getItem(KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
-  useEffect(() => {
-    if (!isConfigured) return;
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  function signIn(email, password) {
+    const ok =
+      String(email || "").trim().toLowerCase() === OWNER_EMAIL &&
+      String(password || "") === OWNER_PASSWORD;
+    if (ok) {
+      try { localStorage.setItem(KEY, "1"); } catch { /* ignore */ }
+      setIsOwner(true);
+    }
+    return ok;
+  }
 
-  const email = session?.user?.email?.toLowerCase() || null;
-  const isOwner = Boolean(email && email === OWNER_EMAIL);
+  function doSignOut() {
+    try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+    setIsOwner(false);
+  }
 
   return (
-    <AuthContext.Provider value={{ session, email, isOwner, ready }}>
+    <AuthContext.Provider value={{ isOwner, ready: true, email: isOwner ? OWNER_EMAIL : null, signIn, signOut: doSignOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -33,6 +45,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-export async function signOut() {
-  if (supabase) await supabase.auth.signOut();
+// Kept for the few call sites that import it directly; prefer useAuth().signOut.
+export function signOut() {
+  try { localStorage.removeItem("keddy_owner"); } catch { /* ignore */ }
 }
