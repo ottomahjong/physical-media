@@ -17,7 +17,7 @@
   </defs>
   <circle cx="32" cy="32" r="30" fill="url(#disc)" stroke="#7c8aa0" stroke-width="1"/>
   <circle cx="32" cy="32" r="23.5" fill="none" stroke="url(#sheen)" stroke-width="11" opacity="0.55"/>
-  <circle cx="32" cy="32" r="9" fill="#f5f1e8" stroke="#b9c6d4" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="9" fill="#FFF7E9" stroke="#b9c6d4" stroke-width="1.5"/>
   <circle cx="32" cy="32" r="3.4" fill="#d4dde7" stroke="#9aa9bb" stroke-width="1"/>
   <path d="M15 22 A26 26 0 0 1 41 11" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
 </svg>

@@ -26,25 +26,26 @@
 }
 
 :root{
-  /* Brand palette */
-  --ti-bone:#F5F1E8; --ti-cream:#EDE6D6; --ti-sand:#D9C9AC; --ti-stone:#B3A78F;
-  --ti-paper:#FBF8F1; --ti-white:#FFFFFF;
-  --ti-ink:#0E1F2C; --ti-ink-soft:#2A3A48; --ti-ink-muted:#5D6C77;
-  --ti-ocean:#1B4A66; --ti-mist:#9DB7C6; --ti-harakeke:#3F5A45; --ti-sage:#8CA08A;
-  --ti-terracotta:#C8623A; --ti-clay:#B5856A; --ti-blush:#E8C5B4;
-  --ti-saffron:#D9A441; --ti-currant:#6E2C2C; --ti-error:#B14B3A;
+  /* Daylight brand palette (godaylight.com). Variable names kept from the
+     prior theme; only the values changed so the whole site remaps cleanly. */
+  --ti-bone:#FFF7E9; --ti-cream:#F0E5CF; --ti-sand:#E7D9BC; --ti-stone:#BCA988;
+  --ti-paper:#F7EED9; --ti-white:#FFFFFF;
+  --ti-ink:#111111; --ti-ink-soft:#2B2B2B; --ti-ink-muted:#6E665A;
+  --ti-ocean:#1D3E86; --ti-mist:#6CA0DC; --ti-harakeke:#7E5B9A; --ti-sage:#9A6B4F;
+  --ti-terracotta:#F66F00; --ti-clay:#9A6B4F; --ti-blush:#F3D9C2;
+  --ti-saffron:#FCCC3C; --ti-currant:#3A2A54; --ti-error:#C0392B;
 
-  --border:rgba(14,31,44,.12); --border-strong:rgba(14,31,44,.32); --rule:rgba(14,31,44,.08);
+  --border:rgba(17,17,17,.14); --border-strong:rgba(17,17,17,.34); --rule:rgba(17,17,17,.09);
 
   --font-display:"Zalando Sans Semi Expanded","Inter",ui-sans-serif,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --font-body:"Google Sans Flex","Google Sans","Inter",ui-sans-serif,-apple-system,"Helvetica Neue",Arial,sans-serif;
 
   --radius-sm:4px; --radius-md:8px; --radius-lg:14px; --radius-xl:24px; --radius-pill:999px;
-  --shadow-sm:0 1px 2px rgba(14,31,44,.04),0 1px 1px rgba(14,31,44,.03);
+  --shadow-sm:0 1px 2px rgba(17,17,17,.04),0 1px 1px rgba(17,17,17,.03);
   --ease:cubic-bezier(.22,.61,.36,1);
 
   /* aliases kept so any stray references still resolve */
-  --ink:var(--ti-ink); --paper:var(--ti-bone); --amber:var(--ti-ocean);
+  --ink:var(--ti-ink); --paper:var(--ti-bone); --amber:var(--ti-terracotta);
   --line:var(--border); --card:var(--ti-paper); --card-line:var(--border);
 }
 
@@ -55,7 +56,7 @@ body{background:var(--ti-bone);color:var(--ti-ink);
   line-height:1.55;padding-bottom:env(safe-area-inset-bottom);
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 a{color:inherit;text-decoration:none}
-::selection{background:var(--ti-ocean);color:var(--ti-bone)}
+::selection{background:var(--ti-terracotta);color:var(--ti-ink)}
 
 /* ---------- header ---------- */
 header{position:sticky;top:0;z-index:10;
@@ -127,7 +128,7 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
   transition:background .15s;border-radius:var(--radius-md)}
 .item:hover{background:var(--ti-paper)}
 .thumb{flex:0 0 auto;border-radius:var(--radius-sm);object-fit:cover;background:var(--ti-cream);
-  box-shadow:0 1px 1px rgba(14,31,44,.08)}
+  box-shadow:0 1px 1px rgba(17,17,17,.08)}
 .thumb--table{width:44px;height:44px}
 .thumb--table.t-VHS,.thumb--table.t-DVD,.thumb--table.t-Cassette,.thumb--table.t-Bluray{width:42px;height:56px}
 .thumb--table.t-CD{width:46px;height:46px}
@@ -138,7 +139,7 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .thumb--form.t-Vinyl{width:68px;height:68px;border-radius:50%}
 .thumb.placeholder{display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:600;
   letter-spacing:.04em;color:var(--ti-bone);text-transform:uppercase}
-.placeholder.t-VHS{background:var(--ti-terracotta);color:var(--ti-bone)}
+.placeholder.t-VHS{background:var(--ti-terracotta);color:var(--ti-ink)}
 .placeholder.t-DVD{background:var(--ti-ocean);color:var(--ti-bone)}
 .placeholder.t-CD{background:var(--ti-harakeke);color:var(--ti-bone)}
 .placeholder.t-Cassette{background:var(--ti-saffron);color:var(--ti-ink)}
@@ -188,7 +189,7 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
   border-radius:var(--radius-md);border:1px solid var(--border);background:var(--ti-paper);color:var(--ti-ink);outline:none}
 .scaninput input:focus{border-color:var(--ti-ink)}
 .scanmsg{font-size:.86rem;color:var(--ti-harakeke);margin:0 0 6px;line-height:1.5}
-.scanoverlay{position:fixed;inset:0;z-index:50;background:rgba(14,31,44,.82);
+.scanoverlay{position:fixed;inset:0;z-index:50;background:rgba(17,17,17,.82);
   display:flex;align-items:center;justify-content:center;padding:20px}
 .scanbox{width:100%;max-width:440px;background:var(--ti-bone);border-radius:var(--radius-lg);
   padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
@@ -245,8 +246,8 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
   font-size:.85rem;font-weight:500;letter-spacing:.02em;padding:13px 24px;border-radius:var(--radius-pill);cursor:pointer;
   border:1px solid var(--ti-ink);background:var(--ti-ink);color:var(--ti-bone);transition:all .25s var(--ease)}
 .btn:hover{background:transparent;color:var(--ti-ink)}
-.btn.primary{background:var(--ti-ocean);border-color:var(--ti-ocean);color:var(--ti-bone)}
-.btn.primary:hover{background:transparent;color:var(--ti-ocean)}
+.btn.primary{background:var(--ti-terracotta);border-color:var(--ti-terracotta);color:var(--ti-ink)}
+.btn.primary:hover{background:transparent;color:var(--ti-ink)}
 .btn.ghost{background:transparent;color:var(--ti-ink)}
 .btn.ghost:hover{background:var(--ti-ink);color:var(--ti-bone)}
 .btn.danger{background:transparent;color:var(--ti-error);border-color:rgba(177,75,58,.5)}
@@ -296,7 +297,7 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .typepill{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:4px 8px;
   border-radius:var(--radius-sm);font-size:.6rem;font-weight:700;letter-spacing:.12em;line-height:1;
   text-transform:uppercase;color:var(--ti-bone);background:var(--ti-stone)}
-.typepill.t-VHS{background:var(--ti-terracotta)}
+.typepill.t-VHS{background:var(--ti-terracotta);color:var(--ti-ink)}
 .typepill.t-DVD{background:var(--ti-ocean)}
 .typepill.t-CD{background:var(--ti-harakeke)}
 .typepill.t-Cassette{background:var(--ti-saffron);color:var(--ti-ink)}
