@@ -16,6 +16,8 @@ const empty = {
   quantity: 1,
   used_price: "",
   good_price: "",
+  barcode: "",
+  catalog_number: "",
   status: "Available",
   notes: "",
   image_url: "",
@@ -59,6 +61,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           artist: r.fields.artist || cur.artist,
           year: r.fields.year || cur.year,
           image_url: r.fields.image_url || cur.image_url,
+          barcode: /^\d{8,14}$/.test(c.replace(/\D/g, "")) ? c.replace(/\D/g, "") : cur.barcode,
+          catalog_number: !/^\d{8,14}$/.test(c.replace(/\D/g, "")) ? c : cur.catalog_number,
         }));
         setScanMsg(`Found "${r.fields.title || c}" via ${r.source}. Check the details, then Save.`);
       } else {
@@ -151,6 +155,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         quantity: Number(v.quantity) || 1,
         used_price: v.used_price === "" ? null : Number(v.used_price),
         good_price: v.good_price === "" ? null : Number(v.good_price),
+        barcode: v.barcode?.trim() || null,
+        catalog_number: v.catalog_number?.trim() || null,
         status: v.status || "Available",
         notes: v.notes.trim() || null,
         image_url: v.image_url || null,
@@ -267,6 +273,17 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         onChange={set("artist")}
         placeholder={creatorPlaceholder}
       />
+
+      <div className="grid2">
+        <div>
+          <label>Barcode / UPC / EAN</label>
+          <input value={v.barcode || ""} onChange={set("barcode")} placeholder="012345678905" />
+        </div>
+        <div>
+          <label>Catalog number</label>
+          <input value={v.catalog_number || ""} onChange={set("catalog_number")} placeholder="D248042" />
+        </div>
+      </div>
 
       <div className="grid2">
         <div>
