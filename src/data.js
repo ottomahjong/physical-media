@@ -48,7 +48,7 @@ const MARKET_VALUE_COLUMNS = new Set([
 
 function missingColumn(error) {
   const msg = `${error?.message || ""} ${error?.details || ""}`;
-  return /schema cache|column .* does not exist|Could not find the .* column/i.test(msg);
+  return /schema cache|Could not find .* column|column .* does not exist|PGRST204/i.test(msg) || error?.code === "PGRST204";
 }
 
 function withoutMarketValueColumns(values) {

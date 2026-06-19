@@ -337,3 +337,8 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
   .grid2:not(.topboxes){grid-template-columns:1fr}
   .seg{flex-direction:column}
 }
+
+.tableSummary{display:flex;justify-content:flex-end;margin:0 2px 10px;font-size:.86rem;font-weight:600;color:var(--ti-ocean);font-variant-numeric:tabular-nums}
+.sorthead{appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer;text-align:inherit;width:100%}
+.ctable th.num .sorthead{text-align:right}
+.sorthead:hover{color:var(--ti-ocean)}

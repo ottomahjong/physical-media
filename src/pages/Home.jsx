@@ -6,13 +6,42 @@ import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
 
 const sortKey = (s) => (s || "").replace(/^(the|a|an)\s+/i, "").toLowerCase();
 
+const columns = [
+  { key: "title", label: "Title" },
+  { key: "artist", label: "Artists / Studio" },
+  { key: "year", label: "Year", className: "colhide" },
+  { key: "type", label: "Category", className: "colhide" },
+  { key: "condition", label: "Condition", className: "colhide" },
+  { key: "status", label: "Status", className: "colhide" },
+  { key: "used_price", label: "Price Paid", className: "colhide num" },
+  { key: "estimated_value", label: "Est. Value", className: "num" },
+  { key: "quantity", label: "Qty", className: "num" },
+];
+
+function columnValue(item, key) {
+  if (key === "estimated_value") return Number(getListingEstimatedValue(item)) || 0;
+  if (["used_price", "quantity"].includes(key)) return Number(item[key]) || 0;
+  if (key === "title") return sortKey(item.title);
+  return String(item[key] || "").toLowerCase();
+}
+
+function sortItems(items, sortState) {
+  return items.slice().sort((a, b) => {
+    const av = columnValue(a, sortState.key);
+    const bv = columnValue(b, sortState.key);
+    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
+    return (sortState.dir === "asc" ? cmp : -cmp) || sortKey(a.title).localeCompare(sortKey(b.title));
+  });
+}
+
+
 export default function Home() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
   const [type, setType] = useState("All");
-  const [sort, setSort] = useState("az");
+  const [sortState, setSortState] = useState({ key: "title", dir: "asc" });
   const [list, setList] = useState("collection");
   const navigate = useNavigate();
 
@@ -41,14 +70,8 @@ export default function Home() {
       if (!q) return true;
       return (`${i.title} ${i.artist || ""} ${i.year || ""}`).toLowerCase().includes(q);
     });
-    const byAZ = (a, b) => sortKey(a.title).localeCompare(sortKey(b.title));
-    if (sort === "value") {
-      r = r.slice().sort((a, b) => (Number(getListingEstimatedValue(b)) || 0) - (Number(getListingEstimatedValue(a)) || 0) || byAZ(a, b));
-    } else {
-      r = r.slice().sort(byAZ);
-    }
-    return r;
-  }, [listItems, query, type, sort]);
+    return sortItems(r, sortState);
+  }, [listItems, query, type, sortState]);
 
   const wishlistCount = useMemo(
     () => items.filter((i) => (i.list || "collection") === "wishlist").length,
@@ -62,6 +85,15 @@ export default function Home() {
     setList(next);
     setType("All");
     setQuery("");
+  }
+
+  function sortBy(key) {
+    setSortState((cur) => ({ key, dir: cur.key === key && cur.dir === "asc" ? "desc" : "asc" }));
+  }
+
+  function sortLabel(key) {
+    if (sortState.key !== key) return "";
+    return sortState.dir === "asc" ? " ▲" : " ▼";
   }
 
   let body;
@@ -87,19 +119,18 @@ export default function Home() {
   } else {
     body = (
       <div className="tablewrap">
+        <div className="tableSummary">Shown value {formatMoney(totalValue) || "$0"}</div>
         <table className="ctable">
           <thead>
             <tr>
               <th className="colhide col-thumb"></th>
-              <th>Title</th>
-              <th>Artists / Studio</th>
-              <th className="colhide">Year</th>
-              <th className="colhide">Category</th>
-              <th className="colhide">Condition</th>
-              <th className="colhide">Status</th>
-              <th className="colhide num">Price Paid</th>
-              <th className="num">Est. Value</th>
-              <th className="num">Qty</th>
+              {columns.map((col) => (
+                <th key={col.key} className={col.className || ""}>
+                  <button type="button" className="sorthead" onClick={() => sortBy(col.key)}>
+                    {col.label}{sortLabel(col.key)}
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -178,8 +209,8 @@ export default function Home() {
             {formatMoney(totalPaid) || "$0"} paid
           </p>
           <div className="sort">
-            <button className="chip" aria-pressed={sort === "az"} onClick={() => setSort("az")}>A–Z</button>
-            <button className="chip" aria-pressed={sort === "value"} onClick={() => setSort("value")}>Value</button>
+            <button className="chip" aria-pressed={sortState.key === "title" && sortState.dir === "asc"} onClick={() => setSortState({ key: "title", dir: "asc" })}>A–Z</button>
+            <button className="chip" aria-pressed={sortState.key === "estimated_value" && sortState.dir === "desc"} onClick={() => setSortState({ key: "estimated_value", dir: "desc" })}>Value</button>
           </div>
         </div>
       )}
