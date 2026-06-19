@@ -152,6 +152,7 @@ function cleanProductTitle(title) {
 
 async function fromUpcItemDb(code) {
   const res = await fetch("https://api.upcitemdb.com/prod/trial/lookup?upc=" + encodeURIComponent(code));
+  if (res.status === 429) throw new Error("rate_limited:UPCitemdb");
   if (!res.ok) return null;
   const data = await res.json();
   const item = data.items && data.items[0];
@@ -178,53 +179,55 @@ async function handleLookup(url, env) {
   const movieType = ["VHS", "DVD", "Blu-ray"].includes(type);
   const code = q.replace(/\D/g, "");
 
+  // Track what we tried / why nothing matched, so the UI can explain it.
+  const tried = [];
+  const notes = [];
+  async function attempt(name, fn) {
+    tried.push(name);
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = String(e?.message || e);
+      if (msg.startsWith("rate_limited:")) notes.push(`${name} daily limit reached`);
+      return null;
+    }
+  }
+
   // A barcode is unambiguous, so query every source regardless of the chosen
   // format: music first (best metadata + clean cover art), then movie UPC.
   if (isBarcode(q)) {
-    try {
-      const music = await fromMusicBrainz(`barcode:${code}`);
-      if (music) return json(music);
-    } catch (_) {
-      /* continue */
+    let r = await attempt("MusicBrainz", () => fromMusicBrainz(`barcode:${code}`));
+    if (r) return json(r);
+    if (env.DISCOGS_TOKEN) {
+      r = await attempt("Discogs", () => fromDiscogs(code, musicType ? type : "", env));
+      if (r) return json(r);
+    } else {
+      notes.push("Discogs not configured");
     }
-    try {
-      const discogs = await fromDiscogs(code, musicType ? type : "", env);
-      if (discogs) return json(discogs);
-    } catch (_) {
-      /* continue */
-    }
-    try {
-      const movie = await fromUpcItemDb(code);
-      if (movie) return json(movie);
-    } catch (_) {
-      /* fail soft */
-    }
-    return json({ found: false, code: q });
+    r = await attempt("UPCitemdb", () => fromUpcItemDb(code));
+    if (r) return json(r);
+    return json({ found: false, code: q, tried, note: notes.join("; ") });
   }
 
   // Catalog numbers are music-specific, so let them resolve even when a movie
   // format is selected. Only block free-text titles for movies — there's no
   // free movie-title database, so a music match there would be wrong.
   if (movieType && !isCatalogNumber(q)) {
-    return json({ found: false, code: q, note: "Scan or enter the UPC for movie lookups." });
+    return json({ found: false, code: q, note: "Movie titles need a UPC — scan or enter the barcode." });
   }
 
-  try {
-    const discogs = await fromDiscogs(q, musicType ? type : "", env);
-    if (discogs) return json(discogs);
-  } catch (_) {
-    /* continue */
+  if (env.DISCOGS_TOKEN) {
+    const r = await attempt("Discogs", () => fromDiscogs(q, musicType ? type : "", env));
+    if (r) return json(r);
+  } else {
+    notes.push("Discogs not configured");
   }
 
-  try {
-    const query = isCatalogNumber(q) ? `catno:"${q}"` : `release:"${q}"`;
-    const music = await fromMusicBrainz(query);
-    if (music) return json(music);
-  } catch (_) {
-    /* fail soft */
-  }
+  const query = isCatalogNumber(q) ? `catno:"${q}"` : `release:"${q}"`;
+  const r = await attempt("MusicBrainz", () => fromMusicBrainz(query));
+  if (r) return json(r);
 
-  return json({ found: false, code: q });
+  return json({ found: false, code: q, tried, note: notes.join("; ") });
 }
 
 function isMusicType(type) { return ["CD", "Cassette", "Vinyl"].includes(type); }

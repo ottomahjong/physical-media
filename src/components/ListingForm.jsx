@@ -78,11 +78,12 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           image_url: r.fields.image_url || cur.image_url,
           ...codeFields(c),
         }));
-        setScanMsg(`Found "${r.fields.title || c}" via ${r.source}. Check the details, then Save.`);
+        setScanMsg(`Source: ${r.source} — found "${r.fields.title || c}". Check the details, then Save.`);
       } else {
         // Keep whatever was entered on the listing even without a match.
         setV((cur) => ({ ...cur, ...codeFields(c) }));
-        setScanMsg(`No match for "${c}". Saved the code — add the rest by hand.`);
+        const why = r.note ? ` — ${r.note}` : r.tried?.length ? ` — tried ${r.tried.join(", ")}` : "";
+        setScanMsg(`No match for "${c}"${why}. Saved the code — add the rest by hand.`);
         lastLookupRef.current = "";
       }
     } catch {
