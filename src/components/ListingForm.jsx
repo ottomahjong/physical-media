@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
-import { uploadImage, TYPES, CONDITIONS, STATUSES, DEFAULT_LIST, artistLabel } from "../data.js";
-import { lookupBarcode } from "../barcode.js";
+import { uploadImage, uploadImageFromUrl, TYPES, CONDITIONS, STATUSES, DEFAULT_LIST, artistLabel } from "../data.js";
+import { lookupListing } from "../barcode.js";
+import { MediaThumb } from "./MediaBits.jsx";
 
 // The camera scanner pulls in the (heavy) zxing library, so load it on demand
 // only when the owner opens it — visitors never download it.
@@ -27,21 +28,29 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [scanning, setScanning] = useState(false);
-  const [code, setCode] = useState("");
+  const [lookupValue, setLookupValue] = useState("");
   const [looking, setLooking] = useState(false);
   const [scanMsg, setScanMsg] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const creatorLabel = artistLabel(v.type);
+  const creatorPlaceholder =
+    creatorLabel === "Studio"
+      ? "e.g. Walt Disney"
+      : creatorLabel === "Artist"
+        ? "e.g. Fleetwood Mac"
+        : "e.g. Walt Disney or Fleetwood Mac";
 
   const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
 
   // Fill the form from a barcode. Only overwrites fields the lookup returns,
   // and leaves anything you've already typed if the source has nothing for it.
-  async function lookup(rawCode) {
-    const c = String(rawCode || "").replace(/\D/g, "");
+  async function lookup(rawValue = lookupValue) {
+    const c = String(rawValue || "").trim();
     if (!c) return;
     setLooking(true);
     setScanMsg(null);
     try {
-      const r = await lookupBarcode(c);
+      const r = await lookupListing(c, v.type);
       if (r.found) {
         setV((cur) => ({
           ...cur,
@@ -49,13 +58,14 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           title: r.fields.title || cur.title,
           artist: r.fields.artist || cur.artist,
           year: r.fields.year || cur.year,
+          image_url: r.fields.image_url || cur.image_url,
         }));
-        setScanMsg(`Found “${r.fields.title}” via ${r.source}. Check the details, then Save.`);
+        setScanMsg(`Found "${r.fields.title || c}" via ${r.source}. Check the details, then Save.`);
       } else {
-        setScanMsg(`No match for ${c}. Enter the details by hand.`);
+        setScanMsg(`No match for ${c}. Try a UPC, catalog number, or exact title.`);
       }
     } catch {
-      setScanMsg("Lookup failed — enter the details by hand.");
+      setScanMsg("Lookup failed. Enter the details by hand.");
     } finally {
       setLooking(false);
     }
@@ -63,12 +73,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
   function onScanned(scanned) {
     setScanning(false);
-    setCode(scanned.replace(/\D/g, ""));
+    setLookupValue(scanned.replace(/\D/g, ""));
     lookup(scanned);
   }
 
-  async function pickImage(e) {
-    const file = e.target.files?.[0];
+  async function useImageFile(file) {
     if (!file) return;
     setUploading(true);
     setError(null);
@@ -80,6 +89,52 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     } finally {
       setUploading(false);
     }
+  }
+
+  async function useImageUrl(url) {
+    const clean = String(url || "").trim();
+    if (!clean) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const uploaded = await uploadImageFromUrl(clean);
+      setV((cur) => ({ ...cur, image_url: uploaded }));
+    } catch {
+      // Many sites block browser-side image reads. Keep the dragged URL so the
+      // cover still renders instead of failing the workflow.
+      setV((cur) => ({ ...cur, image_url: clean }));
+      setScanMsg("Using the dropped image URL. Save to keep it on this listing.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function pickImage(e) {
+    useImageFile(e.target.files?.[0]);
+  }
+
+  function droppedImageUrl(dt) {
+    const uri = dt.getData("text/uri-list") || dt.getData("text/plain");
+    if (/^https?:\/\//i.test(uri)) return uri.trim();
+    const html = dt.getData("text/html");
+    const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : "";
+  }
+
+  function dropImage(e) {
+    e.preventDefault();
+    setDragging(false);
+    const file = Array.from(e.dataTransfer.files || []).find((f) => f.type.startsWith("image/"));
+    if (file) {
+      useImageFile(file);
+      return;
+    }
+    useImageUrl(droppedImageUrl(e.dataTransfer));
+  }
+
+  function pasteImage(e) {
+    const file = Array.from(e.clipboardData.files || []).find((f) => f.type.startsWith("image/"));
+    if (file) useImageFile(file);
   }
 
   async function submit(e) {
@@ -118,36 +173,43 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
       <div className="grid2 topboxes">
         <div className="formbox">
-          <label>Scan barcode</label>
+          <label>Autofill</label>
           <button type="button" className="btn ghost btn--block" onClick={() => { setScanMsg(null); setScanning(true); }}>
             Scan barcode
           </button>
           <div className="scaninput">
             <input
               type="text"
-              inputMode="numeric"
-              placeholder="…or type a UPC/EAN"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(code); } }}
+              placeholder="UPC, catalog no. or title"
+              value={lookupValue}
+              onChange={(e) => setLookupValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(); } }}
             />
-            <button type="button" className="btn" onClick={() => lookup(code)} disabled={looking || !code.trim()}>
-              {looking ? "Looking…" : "Look up"}
+            <button type="button" className="btn" onClick={() => lookup()} disabled={looking || !lookupValue.trim()}>
+              {looking ? "Finding…" : "Find"}
             </button>
           </div>
         </div>
 
         <div className="formbox">
-          <label>Upload image</label>
-          <div className="imgrow">
+          <label>Cover image</label>
+          <div
+            className={`imgdrop${dragging ? " is-dragging" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={dropImage}
+            onPaste={pasteImage}
+            tabIndex="0"
+          >
             <div className="imgbox">
               {v.image_url ? (
-                <img src={v.image_url} alt="thumbnail" />
+                <MediaThumb item={v} size="form" />
               ) : (
-                <span>No image</span>
+                <span>Drop cover</span>
               )}
             </div>
             <div className="imgactions">
+              <span className="dropcopy">Drag an image here, paste one, or upload.</span>
               <label className="btn">
                 {uploading ? "Uploading…" : "Upload"}
                 <input type="file" accept="image/*" hidden onChange={pickImage} disabled={uploading} />
@@ -199,11 +261,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </div>
       </div>
 
-      <label>{artistLabel(v.type)}</label>
+      <label>{creatorLabel}</label>
       <input
         value={v.artist || ""}
         onChange={set("artist")}
-        placeholder={artistLabel(v.type) === "Studio" ? "e.g. Walt Disney" : "e.g. Fleetwood Mac"}
+        placeholder={creatorPlaceholder}
       />
 
       <div className="grid2">

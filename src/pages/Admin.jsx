@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { fetchListings, createListing, formatMoney } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
+import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
 
 export default function Admin() {
   const { isOwner, ready } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -80,21 +82,42 @@ export default function Admin() {
       ) : (
         <div className="adminlist">
           <div className="meta">{rows.length} of {items.length} listings</div>
-          {rows.map((i) => (
-            <Link key={i.id} to={`/listing/${i.id}`} className="adminrow">
-              <span className="athumb">
-                {i.image_url ? <img src={i.image_url} alt="" /> : <span>{i.type}</span>}
-              </span>
-              <span className="info">
-                <span className="title">{i.title}</span>
-                <span className="by">{[i.type, i.artist, i.year].filter(Boolean).join(" · ")}</span>
-              </span>
-              <span className="aval">
-                <span className="good">{formatMoney(i.good_price) || "—"}</span>
-                <span className="badge">{(i.list || "collection") === "wishlist" ? "Wish list" : i.status || "Available"}</span>
-              </span>
-            </Link>
-          ))}
+          {!!rows.length && (
+            <div className="tablewrap">
+              <table className="ctable">
+                <thead>
+                  <tr>
+                    <th className="colhide col-thumb"></th>
+                    <th>Title</th>
+                    <th>Artists / Studio</th>
+                    <th className="colhide">Year</th>
+                    <th className="colhide">Category</th>
+                    <th className="colhide">Condition</th>
+                    <th className="colhide">Status</th>
+                    <th className="colhide num">Price Paid</th>
+                    <th className="num">Est. Value</th>
+                    <th className="num">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((i) => (
+                    <tr key={i.id} onClick={() => navigate(`/listing/${i.id}`)} className="crow">
+                      <td className="colhide col-thumb"><MediaThumb item={i} /></td>
+                      <td className="ctitle">{i.title || <em className="blank">— untitled —</em>}</td>
+                      <td className="cby">{i.artist || "—"}</td>
+                      <td className="colhide">{i.year || "—"}</td>
+                      <td className="colhide">{i.type ? <CategoryPill type={i.type} /> : "—"}</td>
+                      <td className="colhide">{i.condition || "—"}</td>
+                      <td className="colhide">{i.status || "—"}</td>
+                      <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
+                      <td className="num cval">{formatMoney(i.good_price) || "—"}</td>
+                      <td className="num">{i.quantity || 1}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {!rows.length && <div className="empty">No listings match.</div>}
         </div>
       )}

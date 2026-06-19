@@ -2,15 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchListings, formatMoney, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
+import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
 
 const sortKey = (s) => (s || "").replace(/^(the|a|an)\s+/i, "").toLowerCase();
-
-function Thumb({ item }) {
-  if (item.image_url) {
-    return <img className="thumb" src={item.image_url} alt="" loading="lazy" />;
-  }
-  return <span className={"thumb placeholder t-" + (item.type || "").replace(/[^A-Za-z]/g, "")}>{item.type || "?"}</span>;
-}
 
 export default function Home() {
   const [items, setItems] = useState([]);
@@ -98,7 +92,7 @@ export default function Home() {
             <tr>
               <th className="colhide col-thumb"></th>
               <th>Title</th>
-              <th>Artist / Studio</th>
+              <th>Artists / Studio</th>
               <th className="colhide">Year</th>
               <th className="colhide">Category</th>
               <th className="colhide">Condition</th>
@@ -111,11 +105,11 @@ export default function Home() {
           <tbody>
             {rows.map((i) => (
               <tr key={i.id} onClick={() => navigate(`/listing/${i.id}`)} className="crow">
-                <td className="colhide col-thumb"><Thumb item={i} /></td>
+                <td className="colhide col-thumb"><MediaThumb item={i} /></td>
                 <td className="ctitle">{i.title || <em className="blank">— untitled —</em>}</td>
                 <td className="cby">{i.artist || "—"}</td>
                 <td className="colhide">{i.year || "—"}</td>
-                <td className="colhide">{i.type || "—"}</td>
+                <td className="colhide">{i.type ? <CategoryPill type={i.type} /> : "—"}</td>
                 <td className="colhide">{i.condition || "—"}</td>
                 <td className="colhide">{i.status || "—"}</td>
                 <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
