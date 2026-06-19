@@ -39,6 +39,22 @@ export function typeAbbr(type) {
 }
 
 const TABLE = "listings";
+const MARKET_VALUE_COLUMNS = new Set([
+  "barcode", "catalog_number", "external_ids", "price_source", "price_source_kind",
+  "price_source_id", "price_currency", "price_low", "price_median", "price_high",
+  "price_sample_count", "price_confidence", "price_notes", "price_raw",
+  "price_last_checked_at", "price_error",
+]);
+
+function missingColumn(error) {
+  const msg = `${error?.message || ""} ${error?.details || ""}`;
+  return /schema cache|Could not find .* column|column .* does not exist|PGRST204/i.test(msg) || error?.code === "PGRST204";
+}
+
+function withoutMarketValueColumns(values) {
+  return Object.fromEntries(Object.entries(values || {}).filter(([key]) => !MARKET_VALUE_COLUMNS.has(key)));
+}
+
 
 export async function fetchListings() {
   const { data, error } = await supabase
@@ -66,19 +82,37 @@ export async function createListing(values) {
     .insert(values)
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (!error) return data;
+  if (!missingColumn(error)) throw error;
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from(TABLE)
+    .insert(withoutMarketValueColumns(values))
+    .select()
+    .single();
+  if (fallbackError) throw fallbackError;
+  return fallbackData;
 }
 
 export async function updateListing(id, values) {
+  const payload = { ...values, updated_at: new Date().toISOString() };
   const { data, error } = await supabase
     .from(TABLE)
-    .update({ ...values, updated_at: new Date().toISOString() })
+    .update(payload)
     .eq("id", id)
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (!error) return data;
+  if (!missingColumn(error)) throw error;
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from(TABLE)
+    .update(withoutMarketValueColumns(payload))
+    .eq("id", id)
+    .select()
+    .single();
+  if (fallbackError) throw fallbackError;
+  return fallbackData;
 }
 
 export async function deleteListing(id) {
@@ -146,7 +180,12 @@ export async function saveListingValue(listingId, result) {
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase.from(TABLE).update(update).eq("id", listingId).select().single();
-  if (error) throw error;
+  if (error) {
+    if (missingColumn(error)) {
+      return fetchListing(listingId);
+    }
+    throw error;
+  }
   if (["success", "partial"].includes(result.status) && hasPrice) {
     const { error: snapshotError } = await supabase.from("listing_value_snapshots").insert({
       listing_id: listingId,
