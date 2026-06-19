@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { uploadImage, uploadImageFromUrl, TYPES, CONDITIONS, STATUSES, DEFAULT_LIST, artistLabel } from "../data.js";
 import { lookupListing } from "../barcode.js";
 import { MediaThumb } from "./MediaBits.jsx";
@@ -34,6 +34,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   const [looking, setLooking] = useState(false);
   const [scanMsg, setScanMsg] = useState(null);
   const [dragging, setDragging] = useState(false);
+  // Snapshot of the values the form opened with, and the last value we looked
+  // up — together they stop an auto-lookup from re-firing or clobbering an
+  // existing listing's curated details when you just tab through a field.
+  const initialRef = useRef({ ...empty, ...initial });
+  const lastLookupRef = useRef("");
   const creatorLabel = artistLabel(v.type);
   const creatorPlaceholder =
     creatorLabel === "Studio"
@@ -48,7 +53,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   // and leaves anything you've already typed if the source has nothing for it.
   async function lookup(rawValue = lookupValue) {
     const c = String(rawValue || "").trim();
-    if (!c) return;
+    if (!c || looking || c === lastLookupRef.current) return;
+    lastLookupRef.current = c;
     setLooking(true);
     setScanMsg(null);
     try {
@@ -67,9 +73,11 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         setScanMsg(`Found "${r.fields.title || c}" via ${r.source}. Check the details, then Save.`);
       } else {
         setScanMsg(`No match for ${c}. Try a UPC, catalog number, or exact title.`);
+        lastLookupRef.current = ""; // allow a retry of the same value
       }
     } catch {
       setScanMsg("Lookup failed. Enter the details by hand.");
+      lastLookupRef.current = "";
     } finally {
       setLooking(false);
     }
@@ -80,6 +88,17 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     setScanning(false);
     setLookupValue(clean);
     lookup(clean);
+  }
+
+  // Auto-fill when the Barcode or Catalog number field is filled in. Fires on
+  // blur / Enter, but only when the value actually changed from what the form
+  // opened with — so tabbing through an existing listing won't overwrite it.
+  function autoLookup(field) {
+    return (e) => {
+      const val = String(e.target.value || "").trim();
+      if (!val || val === String(initialRef.current[field] || "")) return;
+      lookup(val);
+    };
   }
 
   async function useImageFile(file) {
@@ -196,6 +215,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
               {looking ? "Finding…" : "Find"}
             </button>
           </div>
+          <span className="dropcopy">Scan a barcode, type a UPC / catalog no. / title here, or fill the Barcode or Catalog fields below — we'll auto-fill the rest.</span>
         </div>
 
         <div className="formbox">
@@ -278,11 +298,23 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
       <div className="grid2">
         <div>
           <label>Barcode / UPC / EAN</label>
-          <input value={v.barcode || ""} onChange={set("barcode")} placeholder="012345678905" />
+          <input
+            value={v.barcode || ""}
+            onChange={set("barcode")}
+            onBlur={autoLookup("barcode")}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); autoLookup("barcode")(e); } }}
+            placeholder="012345678905"
+          />
         </div>
         <div>
           <label>Catalog number</label>
-          <input value={v.catalog_number || ""} onChange={set("catalog_number")} placeholder="D248042" />
+          <input
+            value={v.catalog_number || ""}
+            onChange={set("catalog_number")}
+            onBlur={autoLookup("catalog_number")}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); autoLookup("catalog_number")(e); } }}
+            placeholder="D248042"
+          />
         </div>
       </div>
 

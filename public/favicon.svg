@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="disc" cx="42%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="38%" stop-color="#e2eaf1"/>
+      <stop offset="56%" stop-color="#bccada"/>
+      <stop offset="100%" stop-color="#8d9fb4"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff5f6d"/>
+      <stop offset="22%" stop-color="#ffc371"/>
+      <stop offset="44%" stop-color="#7ee8fa"/>
+      <stop offset="64%" stop-color="#73ff9b"/>
+      <stop offset="84%" stop-color="#7367f0"/>
+      <stop offset="100%" stop-color="#ff5f6d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#disc)" stroke="#7c8aa0" stroke-width="1"/>
+  <circle cx="32" cy="32" r="23.5" fill="none" stroke="url(#sheen)" stroke-width="11" opacity="0.55"/>
+  <circle cx="32" cy="32" r="9" fill="#f5f1e8" stroke="#b9c6d4" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="3.4" fill="#d4dde7" stroke="#9aa9bb" stroke-width="1"/>
+  <path d="M15 22 A26 26 0 0 1 41 11" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+</svg>
