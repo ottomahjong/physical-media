@@ -20,8 +20,8 @@ function json(body, status = 200) {
 }
 
 function yearOf(dateStr) {
-  const m = /^(\d{4})/.exec(dateStr || "");
-  return m ? m[1] : "";
+  const m = /(19|20)\d{2}/.exec(dateStr || "");
+  return m ? m[0] : "";
 }
 
 function isBarcode(value) {
@@ -142,10 +142,11 @@ function movieFormatFromTitle(title) {
 function cleanProductTitle(title) {
   return (title || "")
     .replace(/\[[^\]]*\]/g, "")
-    .replace(/\((blu-?ray|dvd|vhs|widescreen|full ?screen|unrated|special edition)[^)]*\)/gi, "")
-    .replace(/\b(blu-?ray|dvd|vhs)\b/gi, "")
+    .replace(/\((blu-?ray|dvd|vhs|video tape|widescreen|full ?screen|unrated|special edition|clamshell)[^)]*\)/gi, "")
+    .replace(/\b(19|20)\d{2}\b/g, "")
+    .replace(/\b(blu-?ray|blu ray|bluray|dvd|vhs|video tape|clamshell|nearly new|brand new|sealed|used|good|very good|like new)\b/gi, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/[\s\-–—:]+$/, "")
+    .replace(/[\s\-–—:!]+$/, "")
     .trim();
 }
 
@@ -161,7 +162,7 @@ async function fromUpcItemDb(code) {
     fields: {
       title: cleanProductTitle(item.title) || item.title,
       artist: item.brand || "",
-      year: "",
+      year: yearOf(item.title),
       type: movieFormatFromTitle(item.title),
       image_url: (item.images || [])[0] || "",
     },
@@ -297,11 +298,35 @@ async function fetchEbayBrowseComps(listing, env) {
   const prices = (data.itemSummaries || []).filter((i)=>!excludedEbayTitle(i.title) && matchesFormat(i.title, listing.type)).map((i)=>Number(i.price?.value)); const s = summarizePrices(prices, "USD", "low", "Active fixed-price listings only; not sold comps.");
   if (!s.sample_count) return null; return { status:"success", listing_id:listing.id||undefined, source:"ebay_browse", source_kind:"ebay_active_asking", source_id:q, matched_title:listing.title, matched_format:listing.type, ...s, confidence:"low", last_checked_at:new Date().toISOString(), raw:{ limited:true, providers_tried:["ebay_browse"] } };
 }
+// Free stopgap (no approval needed) while eBay access is pending. Uses
+// UPCitemdb's current marketplace offers, falling back to its recorded price
+// range. Retail/new-leaning, not used sold comps, so always low confidence —
+// eBay/Discogs sit earlier in the chain and take over once configured.
+async function fetchUpcItemDbValue(listing) {
+  if (!listing.barcode) return { status:"skipped", source:"upcitemdb", reason:"no barcode" };
+  const res = await timedFetch("https://api.upcitemdb.com/prod/trial/lookup?upc=" + encodeURIComponent(listing.barcode));
+  if (!res.ok) throw new Error(`UPCitemdb ${res.status}`);
+  const item = (await res.json()).items?.[0];
+  if (!item) return null;
+  const offerPrices = (item.offers || []).map((o) => Number(o.price)).filter((n) => Number.isFinite(n) && n > 0);
+  let low, median, high, sample_count, notes;
+  if (offerPrices.length) {
+    const s = summarizePrices(offerPrices, "USD", "low", "UPCitemdb current retail offers (retail-leaning, not used sold comps).");
+    ({ low, median, high, sample_count } = s); notes = s.notes;
+  } else {
+    low = Number(item.lowest_recorded_price) || null; high = Number(item.highest_recorded_price) || null;
+    median = low != null && high != null ? Number(((low + high) / 2).toFixed(2)) : (low ?? high);
+    sample_count = low != null || high != null ? 1 : 0;
+    notes = "UPCitemdb recorded price range (retail-leaning, not used sold comps).";
+  }
+  if (!sample_count) return null;
+  return { status:"success", listing_id:listing.id||undefined, source:"upcitemdb", source_kind:"upcitemdb_recorded_price", source_id:listing.barcode, matched_title:item.title || listing.title, matched_format:listing.type, currency:"USD", low:low ?? null, median:median ?? null, high:high ?? null, sample_count, confidence:"low", notes, last_checked_at:new Date().toISOString(), raw:{ providers_tried:["upcitemdb"], upcitemdb:{ lowest_recorded_price:item.lowest_recorded_price, highest_recorded_price:item.highest_recorded_price, offer_count:offerPrices.length } } };
+}
 async function fetchKeepaValue() { return { status:"skipped", source:"keepa", reason:"not implemented" }; }
 async function fetchDisqMetadata() { return { status:"skipped", source:"disqapis", reason:"not implemented" }; }
 function chooseBestValue(results) { return results.find((r)=>r && r.status === "success") || null; }
 async function computeValue(listing, env) {
-  const providers = isMusicType(listing.type) ? [fetchDiscogsValue, fetchEbaySoldComps, fetchEbayBrowseComps, fetchKeepaValue] : [fetchDisqMetadata, fetchEbaySoldComps, fetchEbayBrowseComps, fetchKeepaValue];
+  const providers = isMusicType(listing.type) ? [fetchDiscogsValue, fetchEbaySoldComps, fetchEbayBrowseComps, fetchUpcItemDbValue, fetchKeepaValue] : [fetchDisqMetadata, fetchEbaySoldComps, fetchEbayBrowseComps, fetchUpcItemDbValue, fetchKeepaValue];
   const tried=[], skipped=[], errors=[], successes=[];
   for (const p of providers) { try { const r = await p(listing, env); if (r?.status === "skipped") skipped.push(r.source); else { tried.push(r?.source || p.name); if (r?.status === "success") successes.push(r); } } catch(e) { const name = p.name.replace(/^fetch/, "").replace(/Value|Comps|Metadata/g, "").toLowerCase(); tried.push(name); errors.push({ source:name, message:e.message }); } }
   const best = chooseBestValue(successes); if (best) return { ...best, status: errors.length ? "partial" : "success", raw:{ ...(best.raw||{}), providers_tried:tried, providers_skipped:skipped, provider_errors:errors } };

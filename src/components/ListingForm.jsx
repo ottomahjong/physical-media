@@ -76,9 +76,10 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   }
 
   function onScanned(scanned) {
+    const clean = String(scanned || "").trim();
     setScanning(false);
-    setLookupValue(scanned.replace(/\D/g, ""));
-    lookup(scanned);
+    setLookupValue(clean);
+    lookup(clean);
   }
 
   async function useImageFile(file) {
@@ -177,7 +178,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         </Suspense>
       )}
 
-      <div className="grid2 topboxes">
+      <div className="topboxes">
         <div className="formbox">
           <label>Autofill</label>
           <button type="button" className="btn ghost btn--block" onClick={() => { setScanMsg(null); setScanning(true); }}>
