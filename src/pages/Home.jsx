@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchListings, formatMoney, TYPES } from "../data.js";
+import { fetchListings, formatMoney, getListingEstimatedValue, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
 
@@ -43,7 +43,7 @@ export default function Home() {
     });
     const byAZ = (a, b) => sortKey(a.title).localeCompare(sortKey(b.title));
     if (sort === "value") {
-      r = r.slice().sort((a, b) => (Number(b.good_price) || 0) - (Number(a.good_price) || 0) || byAZ(a, b));
+      r = r.slice().sort((a, b) => (Number(getListingEstimatedValue(b)) || 0) - (Number(getListingEstimatedValue(a)) || 0) || byAZ(a, b));
     } else {
       r = r.slice().sort(byAZ);
     }
@@ -55,7 +55,7 @@ export default function Home() {
     [items]
   );
 
-  const totalValue = rows.reduce((s, i) => s + (Number(i.good_price) || 0) * (Number(i.quantity) || 1), 0);
+  const totalValue = rows.reduce((s, i) => s + (Number(getListingEstimatedValue(i)) || 0) * (Number(i.quantity) || 1), 0);
   const totalPaid = rows.reduce((s, i) => s + (Number(i.used_price) || 0) * (Number(i.quantity) || 1), 0);
 
   function switchList(next) {
@@ -113,7 +113,7 @@ export default function Home() {
                 <td className="colhide">{i.condition || "—"}</td>
                 <td className="colhide">{i.status || "—"}</td>
                 <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
-                <td className="num cval">{formatMoney(i.good_price) || "—"}</td>
+                <td className="num cval">{formatMoney(getListingEstimatedValue(i)) || "—"}</td>
                 <td className="num">{i.quantity || 1}</td>
               </tr>
             ))}

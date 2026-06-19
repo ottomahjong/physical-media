@@ -5,8 +5,8 @@
 // to the public MusicBrainz / Cover Art Archive and UPCitemdb endpoints.
 
 function yearOf(dateStr) {
-  const m = /^(\d{4})/.exec(dateStr || "");
-  return m ? m[1] : "";
+  const m = /(19|20)\d{2}/.exec(dateStr || "");
+  return m ? m[0] : "";
 }
 
 function isBarcode(value) {
@@ -85,10 +85,11 @@ function movieFormatFromTitle(title) {
 function cleanProductTitle(title) {
   return (title || "")
     .replace(/\[[^\]]*\]/g, "")
-    .replace(/\((blu-?ray|dvd|vhs|widescreen|full ?screen|unrated|special edition)[^)]*\)/gi, "")
-    .replace(/\b(blu-?ray|dvd|vhs)\b/gi, "")
+    .replace(/\((blu-?ray|dvd|vhs|video tape|widescreen|full ?screen|unrated|special edition|clamshell)[^)]*\)/gi, "")
+    .replace(/\b(19|20)\d{2}\b/g, "")
+    .replace(/\b(blu-?ray|blu ray|bluray|dvd|vhs|video tape|clamshell|nearly new|brand new|sealed|used|good|very good|like new)\b/gi, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/[\s\-–—:]+$/, "")
+    .replace(/[\s\-–—:!]+$/, "")
     .trim();
 }
 
@@ -105,7 +106,7 @@ async function lookupUpcItemDb(code) {
     fields: {
       title: cleanProductTitle(item.title) || item.title,
       artist: item.brand || "",
-      year: "",
+      year: yearOf(item.title),
       type: movieFormatFromTitle(item.title),
       image_url: (item.images || [])[0] || "",
     },

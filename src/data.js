@@ -39,6 +39,22 @@ export function typeAbbr(type) {
 }
 
 const TABLE = "listings";
+const MARKET_VALUE_COLUMNS = new Set([
+  "barcode", "catalog_number", "external_ids", "price_source", "price_source_kind",
+  "price_source_id", "price_currency", "price_low", "price_median", "price_high",
+  "price_sample_count", "price_confidence", "price_notes", "price_raw",
+  "price_last_checked_at", "price_error",
+]);
+
+function missingColumn(error) {
+  const msg = `${error?.message || ""} ${error?.details || ""}`;
+  return /schema cache|column .* does not exist|Could not find the .* column/i.test(msg);
+}
+
+function withoutMarketValueColumns(values) {
+  return Object.fromEntries(Object.entries(values || {}).filter(([key]) => !MARKET_VALUE_COLUMNS.has(key)));
+}
+
 
 export async function fetchListings() {
   const { data, error } = await supabase
@@ -66,19 +82,37 @@ export async function createListing(values) {
     .insert(values)
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (!error) return data;
+  if (!missingColumn(error)) throw error;
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from(TABLE)
+    .insert(withoutMarketValueColumns(values))
+    .select()
+    .single();
+  if (fallbackError) throw fallbackError;
+  return fallbackData;
 }
 
 export async function updateListing(id, values) {
+  const payload = { ...values, updated_at: new Date().toISOString() };
   const { data, error } = await supabase
     .from(TABLE)
-    .update({ ...values, updated_at: new Date().toISOString() })
+    .update(payload)
     .eq("id", id)
     .select()
     .single();
-  if (error) throw error;
-  return data;
+  if (!error) return data;
+  if (!missingColumn(error)) throw error;
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from(TABLE)
+    .update(withoutMarketValueColumns(payload))
+    .eq("id", id)
+    .select()
+    .single();
+  if (fallbackError) throw fallbackError;
+  return fallbackData;
 }
 
 export async function deleteListing(id) {
@@ -114,6 +148,62 @@ export async function uploadImageFromUrl(url) {
   const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
   const file = new File([blob], `cover-from-url.${ext}`, { type: blob.type });
   return uploadImage(file);
+}
+
+export function getListingEstimatedValue(listing) {
+  return listing?.price_median ?? listing?.price_low ?? listing?.used_price ?? listing?.good_price ?? null;
+}
+
+export function isPriceStale(listing, days = 14) {
+  if (!listing?.price_last_checked_at) return true;
+  const checked = new Date(listing.price_last_checked_at).getTime();
+  if (!Number.isFinite(checked)) return true;
+  return Date.now() - checked > days * 24 * 60 * 60 * 1000;
+}
+
+export async function saveListingValue(listingId, result) {
+  const hasPrice = result?.low != null || result?.median != null || result?.high != null;
+  const update = {
+    price_source: result.source,
+    price_source_kind: result.source_kind,
+    price_source_id: result.source_id,
+    price_currency: result.currency || "USD",
+    price_low: result.low,
+    price_median: result.median,
+    price_high: result.high,
+    price_sample_count: result.sample_count || 0,
+    price_confidence: result.confidence || "low",
+    price_notes: result.notes || null,
+    price_raw: result.raw || {},
+    price_last_checked_at: result.last_checked_at || new Date().toISOString(),
+    price_error: ["error", "not_found"].includes(result.status) ? result.notes || result.status : null,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from(TABLE).update(update).eq("id", listingId).select().single();
+  if (error) {
+    if (missingColumn(error)) {
+      return fetchListing(listingId);
+    }
+    throw error;
+  }
+  if (["success", "partial"].includes(result.status) && hasPrice) {
+    const { error: snapshotError } = await supabase.from("listing_value_snapshots").insert({
+      listing_id: listingId,
+      source: result.source,
+      source_kind: result.source_kind,
+      source_id: result.source_id,
+      currency: result.currency || "USD",
+      low: result.low,
+      median: result.median,
+      high: result.high,
+      sample_count: result.sample_count || 0,
+      confidence: result.confidence || "low",
+      notes: result.notes || null,
+      raw: result.raw || {},
+    });
+    if (snapshotError) throw snapshotError;
+  }
+  return data;
 }
 
 export function formatMoney(n) {

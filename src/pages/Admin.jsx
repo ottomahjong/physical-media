@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { fetchListings, createListing, formatMoney } from "../data.js";
+import { fetchListings, createListing, formatMoney, getListingEstimatedValue, isPriceStale, saveListingValue } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
 import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
+import { valueLookupBatch } from "../values.js";
 
 export default function Admin() {
   const { isOwner, ready } = useAuth();
@@ -15,6 +16,8 @@ export default function Admin() {
   const [query, setQuery] = useState("");
   const [list, setList] = useState("all");
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [progress, setProgress] = useState(null);
 
   useEffect(() => {
     if (!isConfigured || !isOwner) { setLoading(false); return; }
@@ -33,6 +36,30 @@ export default function Admin() {
     setAdding(false);
   }
 
+  async function refreshRows(targets) {
+    if (!targets.length) return;
+    setRefreshing(true);
+    setProgress(`Refreshing 0 of ${targets.length}`);
+    let done = 0;
+    for (let i = 0; i < targets.length; i += 3) {
+      const chunk = targets.slice(i, i + 3);
+      try {
+        const batch = await valueLookupBatch(chunk, { force: true });
+        await Promise.all((batch.results || []).map(async (result, idx) => {
+          const id = result.listing_id || chunk[idx]?.id;
+          if (!id) return;
+          const updated = await saveListingValue(id, result);
+          setItems((cur) => cur.map((item) => item.id === id ? { ...item, ...updated } : item));
+        }));
+      } catch (err) {
+        setError(err.message || "Some values failed to refresh.");
+      }
+      done += chunk.length;
+      setProgress(`Refreshing ${Math.min(done, targets.length)} of ${targets.length}`);
+    }
+    setRefreshing(false);
+  }
+
   const rows = items.filter((i) => {
     if (list !== "all" && (i.list || "collection") !== list) return false;
     return (`${i.title} ${i.artist || ""}`).toLowerCase().includes(query.trim().toLowerCase());
@@ -43,7 +70,7 @@ export default function Admin() {
       <div className="adminhead">
         <h2>Manage listings</h2>
         {!adding && (
-          <button className="btn primary" onClick={() => setAdding(true)}>+ Add listing</button>
+          <div className="adminactions"><button className="btn ghost" disabled={refreshing} onClick={() => refreshRows(items.filter((i) => isPriceStale(i)))}>{refreshing ? "Refreshing…" : "Refresh stale values"}</button><button className="btn primary" onClick={() => setAdding(true)}>+ Add listing</button></div>
         )}
       </div>
 
@@ -77,6 +104,7 @@ export default function Admin() {
       </div>
 
       {error && <p className="err">{error}</p>}
+      {progress && <p className="progressText">{progress}</p>}
       {loading ? (
         <div className="empty">Loading…</div>
       ) : (
@@ -110,7 +138,7 @@ export default function Admin() {
                       <td className="colhide">{i.condition || "—"}</td>
                       <td className="colhide">{i.status || "—"}</td>
                       <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
-                      <td className="num cval">{formatMoney(i.good_price) || "—"}</td>
+                      <td className="num cval">{formatMoney(getListingEstimatedValue(i)) || "—"}</td>
                       <td className="num">{i.quantity || 1}</td>
                     </tr>
                   ))}

@@ -79,3 +79,29 @@ custom domain to the Supabase redirect allow-list too.
 - Nothing about the database changes when you switch hosts. If you haven't
   already applied the wish-list migration to your live DB, see
   `db/migrations/0001_add_list_column.sql`.
+
+## Optional market-value refresh providers
+The market-value refresh feature uses deterministic source APIs through the
+Cloudflare Worker only. Browser code calls `/api/value` and `/api/value/batch`;
+it never receives provider secrets and no Groq, OpenAI, Claude, Gemini, or other
+LLM/AI-token pricing path is used.
+
+All of these Worker runtime secrets/variables are optional. If a provider is not
+configured, the Worker records it as skipped and tries the next source.
+
+| Variable | Required? | Notes |
+|---|---:|---|
+| `DISCOGS_TOKEN` | Optional | Preferred for Vinyl, CD, and Cassette. Discogs marketplace stats are treated as current marketplace floor/availability, not sold comps. |
+| `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` | Optional | Enables eBay Browse active-listing fallback. Set these as Worker runtime secrets, not Vite build variables. |
+| `EBAY_MARKETPLACE_ID` | Optional | Defaults to `EBAY_US`. |
+| `EBAY_MARKETPLACE_INSIGHTS_ENABLED` | Optional | Defaults to `false`. Set to `true` only when your eBay app has Marketplace Insights access. If access is missing, the Worker falls back gracefully to Browse when configured. |
+| `KEEPA_ACCESS_KEY` | Optional | Reserved for Amazon price-history support; not required. |
+| `DISQAPIS_KEY` / `DISQAPIS_API_KEY` | Optional | Reserved as movie metadata helpers; not pricing sources. |
+| `VALUE_REFRESH_CACHE_SECONDS` | Optional | Normalized Worker response cache TTL. Defaults to `43200` (12 hours). |
+| `VALUE_REFRESH_STALE_DAYS` | Optional | UI stale threshold default is 14 days. |
+
+To enable the eBay active-listing fallback, create eBay application credentials
+and add `EBAY_CLIENT_ID` and `EBAY_CLIENT_SECRET` to the Worker runtime secrets.
+Sold-comps support uses eBay Marketplace Insights and may require separate eBay
+access; set `EBAY_MARKETPLACE_INSIGHTS_ENABLED=true` only after that access is
+available.
