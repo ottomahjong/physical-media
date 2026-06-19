@@ -34,10 +34,8 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   const [looking, setLooking] = useState(false);
   const [scanMsg, setScanMsg] = useState(null);
   const [dragging, setDragging] = useState(false);
-  // Snapshot of the values the form opened with, and the last value we looked
-  // up — together they stop an auto-lookup from re-firing or clobbering an
-  // existing listing's curated details when you just tab through a field.
-  const initialRef = useRef({ ...empty, ...initial });
+  // The last value we looked up, so tabbing out / pressing Find doesn't re-run
+  // the same search.
   const lastLookupRef = useRef("");
   const creatorLabel = artistLabel(v.type);
   const creatorPlaceholder =
@@ -49,8 +47,19 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
 
   const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
 
-  // Fill the form from a barcode. Only overwrites fields the lookup returns,
-  // and leaves anything you've already typed if the source has nothing for it.
+  // Work out what kind of value was entered so we can record it on the
+  // listing: a barcode (8–14 digits) or a catalog number (compact, has a
+  // digit, no spaces). Free-text titles are left out of those fields.
+  function codeFields(c) {
+    const digits = c.replace(/\D/g, "");
+    if (/^\d{8,14}$/.test(digits)) return { barcode: digits };
+    if (!/\s/.test(c) && /\d/.test(c) && /^[A-Za-z0-9._-]{3,}$/.test(c)) return { catalog_number: c };
+    return {};
+  }
+
+  // Look up a barcode / UPC / EAN / catalog number / title and fill whatever
+  // fields the source returns. Triggered by Scan, Enter, Find, or tabbing out
+  // of the code field.
   async function lookup(rawValue = lookupValue) {
     const c = String(rawValue || "").trim();
     if (!c || looking || c === lastLookupRef.current) return;
@@ -67,13 +76,14 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           artist: r.fields.artist || cur.artist,
           year: r.fields.year || cur.year,
           image_url: r.fields.image_url || cur.image_url,
-          barcode: /^\d{8,14}$/.test(c.replace(/\D/g, "")) ? c.replace(/\D/g, "") : cur.barcode,
-          catalog_number: !/^\d{8,14}$/.test(c.replace(/\D/g, "")) ? c : cur.catalog_number,
+          ...codeFields(c),
         }));
         setScanMsg(`Found "${r.fields.title || c}" via ${r.source}. Check the details, then Save.`);
       } else {
-        setScanMsg(`No match for ${c}. Try a UPC, catalog number, or exact title.`);
-        lastLookupRef.current = ""; // allow a retry of the same value
+        // Keep whatever was entered on the listing even without a match.
+        setV((cur) => ({ ...cur, ...codeFields(c) }));
+        setScanMsg(`No match for "${c}". Saved the code — add the rest by hand.`);
+        lastLookupRef.current = "";
       }
     } catch {
       setScanMsg("Lookup failed. Enter the details by hand.");
@@ -88,17 +98,6 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
     setScanning(false);
     setLookupValue(clean);
     lookup(clean);
-  }
-
-  // Auto-fill when the Barcode or Catalog number field is filled in. Fires on
-  // blur / Enter, but only when the value actually changed from what the form
-  // opened with — so tabbing through an existing listing won't overwrite it.
-  function autoLookup(field) {
-    return (e) => {
-      const val = String(e.target.value || "").trim();
-      if (!val || val === String(initialRef.current[field] || "")) return;
-      lookup(val);
-    };
   }
 
   async function useImageFile(file) {
@@ -203,19 +202,21 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
           <button type="button" className="btn ghost btn--block" onClick={() => { setScanMsg(null); setScanning(true); }}>
             Scan barcode
           </button>
+          <span className="orsep">or</span>
           <div className="scaninput">
             <input
               type="text"
-              placeholder="UPC, catalog no. or title"
+              placeholder="Barcode / UPC / EAN / catalog no. / title"
               value={lookupValue}
               onChange={(e) => setLookupValue(e.target.value)}
+              onBlur={() => lookup()}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); lookup(); } }}
             />
             <button type="button" className="btn" onClick={() => lookup()} disabled={looking || !lookupValue.trim()}>
               {looking ? "Finding…" : "Find"}
             </button>
           </div>
-          <span className="dropcopy">Scan a barcode, type a UPC / catalog no. / title here, or fill the Barcode or Catalog fields below — we'll auto-fill the rest.</span>
+          <span className="dropcopy">Scan, or type any of these and tab out — we'll fill in whatever we can find.</span>
         </div>
 
         <div className="formbox">
@@ -294,29 +295,6 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         onChange={set("artist")}
         placeholder={creatorPlaceholder}
       />
-
-      <div className="grid2">
-        <div>
-          <label>Barcode / UPC / EAN</label>
-          <input
-            value={v.barcode || ""}
-            onChange={set("barcode")}
-            onBlur={autoLookup("barcode")}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); autoLookup("barcode")(e); } }}
-            placeholder="012345678905"
-          />
-        </div>
-        <div>
-          <label>Catalog number</label>
-          <input
-            value={v.catalog_number || ""}
-            onChange={set("catalog_number")}
-            onBlur={autoLookup("catalog_number")}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); autoLookup("catalog_number")(e); } }}
-            placeholder="D248042"
-          />
-        </div>
-      </div>
 
       <div className="grid2">
         <div>

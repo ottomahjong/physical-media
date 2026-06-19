@@ -233,6 +233,12 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .scaninput{display:flex;gap:8px;align-items:stretch}
 .scaninput input{flex:1;min-width:0}
 .scaninput .btn{flex:0 0 auto;padding:12px 18px;border-radius:var(--radius-md)}
+.orsep{display:block;text-align:center;font-size:.62rem;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ti-ink-muted);margin:2px 0}
+
+/* Uniform, compact field height (max 50px). Long-form notes stays tall. */
+.lform input,.lform select,.panel input,.scaninput input,.scaninput .btn,.btn--block{height:48px}
+.lform textarea{height:auto;min-height:88px}
 
 .formbtns{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);

@@ -12,6 +12,9 @@ hints.set(DecodeHintType.POSSIBLE_FORMATS, [
   BarcodeFormat.EAN_13,
   BarcodeFormat.EAN_8,
 ]);
+// CD/cassette/vinyl barcodes can be faint or curved on the spine; TRY_HARDER
+// makes zxing work the frame harder to get a read.
+hints.set(DecodeHintType.TRY_HARDER, true);
 
 export default function BarcodeScanner({ onDetected, onClose }) {
   const videoRef = useRef(null);
