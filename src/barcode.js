@@ -140,9 +140,10 @@ async function lookupDirect(value, type) {
     return { found: false, code: clean };
   }
 
-  // Catalog number / title text only resolves against music databases. There's
-  // no free movie-title source, so don't guess for a movie format.
-  if (["VHS", "DVD", "Blu-ray"].includes(type)) return { found: false, code: clean };
+  // Catalog number / title text only resolves against music databases. Allow
+  // catalog numbers even under a movie format; only block free-text titles
+  // (no free movie-title source).
+  if (["VHS", "DVD", "Blu-ray"].includes(type) && !isCatalogNumber(clean)) return { found: false, code: clean };
 
   const query = isCatalogNumber(clean)
     ? `catno:"${clean}"`

@@ -202,10 +202,10 @@ async function handleLookup(url, env) {
     return json({ found: false, code: q });
   }
 
-  // Plain text (catalog number or title) only resolves against music
-  // databases. There's no free movie-title source, so for a movie format we
-  // don't guess — a music match would be wrong. Scan/enter the UPC instead.
-  if (movieType) {
+  // Catalog numbers are music-specific, so let them resolve even when a movie
+  // format is selected. Only block free-text titles for movies — there's no
+  // free movie-title database, so a music match there would be wrong.
+  if (movieType && !isCatalogNumber(q)) {
     return json({ found: false, code: q, note: "Scan or enter the UPC for movie lookups." });
   }
 
