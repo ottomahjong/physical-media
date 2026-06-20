@@ -38,6 +38,7 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
   // the same search.
   const lastLookupRef = useRef("");
   const creatorLabel = artistLabel(v.type);
+  const isWish = (v.list || DEFAULT_LIST) === "wishlist";
   const creatorPlaceholder =
     creatorLabel === "Studio"
       ? "e.g. Walt Disney"
@@ -277,18 +278,27 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
       <label>Title</label>
       <input value={v.title} onChange={set("title")} required placeholder="e.g. The Lion King" />
 
-      <div className="grid2">
-        <div>
+      {isWish ? (
+        <>
           <label>Format</label>
           <select value={v.type} onChange={set("type")}>
             {TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
+        </>
+      ) : (
+        <div className="grid2">
+          <div>
+            <label>Format</label>
+            <select value={v.type} onChange={set("type")}>
+              {TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label>Year</label>
+            <input value={v.year || ""} onChange={set("year")} placeholder="1994" />
+          </div>
         </div>
-        <div>
-          <label>Year</label>
-          <input value={v.year || ""} onChange={set("year")} placeholder="1994" />
-        </div>
-      </div>
+      )}
 
       <label>{creatorLabel}</label>
       <input
@@ -297,37 +307,47 @@ export default function ListingForm({ initial, onSave, onCancel, onDelete }) {
         placeholder={creatorPlaceholder}
       />
 
-      <div className="grid2">
-        <div>
-          <label>Condition</label>
-          <select value={v.condition || ""} onChange={set("condition")}>
-            {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-        <div>
-          <label>Status</label>
-          <select value={v.status || ""} onChange={set("status")}>
-            {STATUSES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid2">
-        <div>
-          <label>Price Paid ($)</label>
-          <input type="number" step="0.01" value={v.used_price ?? ""} onChange={set("used_price")} placeholder="1" />
-        </div>
-        <div>
+      {/* Wish-list items aren't owned yet, so only Est. Value applies. */}
+      {isWish ? (
+        <>
           <label>Est. Value ($)</label>
           <input type="number" step="0.01" value={v.good_price ?? ""} onChange={set("good_price")} placeholder="3" />
-        </div>
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="grid2">
+            <div>
+              <label>Condition</label>
+              <select value={v.condition || ""} onChange={set("condition")}>
+                {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select value={v.status || ""} onChange={set("status")}>
+                {STATUSES.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
 
-      <label>Quantity</label>
-      <input type="number" min="1" value={v.quantity ?? 1} onChange={set("quantity")} />
+          <div className="grid2">
+            <div>
+              <label>Price Paid ($)</label>
+              <input type="number" step="0.01" value={v.used_price ?? ""} onChange={set("used_price")} placeholder="1" />
+            </div>
+            <div>
+              <label>Est. Value ($)</label>
+              <input type="number" step="0.01" value={v.good_price ?? ""} onChange={set("good_price")} placeholder="3" />
+            </div>
+          </div>
 
-      <label>Notes</label>
-      <textarea rows="3" value={v.notes || ""} onChange={set("notes")} placeholder="Condition details, where it's stored, listing link, etc." />
+          <label>Quantity</label>
+          <input type="number" min="1" value={v.quantity ?? 1} onChange={set("quantity")} />
+
+          <label>Notes</label>
+          <textarea rows="3" value={v.notes || ""} onChange={set("notes")} placeholder="Condition details, where it's stored, listing link, etc." />
+        </>
+      )}
 
       {error && <p className="err">{error}</p>}
 

@@ -273,6 +273,8 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 /* ---------- inventory table ---------- */
 .tablewrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .ctable{width:100%;min-width:980px;border-collapse:collapse;font-family:var(--font-body);font-size:.92rem;table-layout:fixed}
+/* Wish-list table has few columns — let it size to content, no forced width. */
+.ctable--wish{min-width:0;table-layout:auto}
 .ctable thead th{font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   color:var(--ti-ink-muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 .ctable th.num,.ctable td.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -280,16 +282,16 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
 .crow{cursor:pointer;transition:background .15s}
 .crow:hover{background:var(--ti-paper)}
 .col-thumb{width:68px}
-.ctable th:nth-child(1),.ctable td:nth-child(1){width:68px}
-.ctable th:nth-child(2),.ctable td:nth-child(2){width:25%}
-.ctable th:nth-child(3),.ctable td:nth-child(3){width:23%}
-.ctable th:nth-child(4),.ctable td:nth-child(4){width:7%}
-.ctable th:nth-child(5),.ctable td:nth-child(5){width:9%}
-.ctable th:nth-child(6),.ctable td:nth-child(6){width:9%}
-.ctable th:nth-child(7),.ctable td:nth-child(7){width:10%}
-.ctable th:nth-child(8),.ctable td:nth-child(8){width:9%}
-.ctable th:nth-child(9),.ctable td:nth-child(9){width:9%}
-.ctable th:nth-child(10),.ctable td:nth-child(10){width:5%}
+.ctable:not(.ctable--wish) th:nth-child(1),.ctable:not(.ctable--wish) td:nth-child(1){width:68px}
+.ctable:not(.ctable--wish) th:nth-child(2),.ctable:not(.ctable--wish) td:nth-child(2){width:25%}
+.ctable:not(.ctable--wish) th:nth-child(3),.ctable:not(.ctable--wish) td:nth-child(3){width:23%}
+.ctable:not(.ctable--wish) th:nth-child(4),.ctable:not(.ctable--wish) td:nth-child(4){width:7%}
+.ctable:not(.ctable--wish) th:nth-child(5),.ctable:not(.ctable--wish) td:nth-child(5){width:9%}
+.ctable:not(.ctable--wish) th:nth-child(6),.ctable:not(.ctable--wish) td:nth-child(6){width:9%}
+.ctable:not(.ctable--wish) th:nth-child(7),.ctable:not(.ctable--wish) td:nth-child(7){width:10%}
+.ctable:not(.ctable--wish) th:nth-child(8),.ctable:not(.ctable--wish) td:nth-child(8){width:9%}
+.ctable:not(.ctable--wish) th:nth-child(9),.ctable:not(.ctable--wish) td:nth-child(9){width:9%}
+.ctable:not(.ctable--wish) th:nth-child(10),.ctable:not(.ctable--wish) td:nth-child(10){width:5%}
 .ctitle{font-weight:500;color:var(--ti-ink)}
 .ctitle,.cby{overflow:hidden;text-overflow:ellipsis}
 .cby{color:var(--ti-ink-soft)}

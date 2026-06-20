@@ -2,38 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchListings, formatMoney, getListingEstimatedValue, TYPES } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
-import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
-
-const sortKey = (s) => (s || "").replace(/^(the|a|an)\s+/i, "").toLowerCase();
-
-const columns = [
-  { key: "title", label: "Title" },
-  { key: "artist", label: "Artists / Studio" },
-  { key: "year", label: "Year", className: "colhide" },
-  { key: "type", label: "Category", className: "colhide" },
-  { key: "condition", label: "Condition", className: "colhide" },
-  { key: "status", label: "Status", className: "colhide" },
-  { key: "used_price", label: "Price Paid", className: "colhide num" },
-  { key: "estimated_value", label: "Est. Value", className: "num" },
-  { key: "quantity", label: "Qty", className: "num" },
-];
-
-function columnValue(item, key) {
-  if (key === "estimated_value") return Number(getListingEstimatedValue(item)) || 0;
-  if (["used_price", "quantity"].includes(key)) return Number(item[key]) || 0;
-  if (key === "title") return sortKey(item.title);
-  return String(item[key] || "").toLowerCase();
-}
-
-function sortItems(items, sortState) {
-  return items.slice().sort((a, b) => {
-    const av = columnValue(a, sortState.key);
-    const bv = columnValue(b, sortState.key);
-    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
-    return (sortState.dir === "asc" ? cmp : -cmp) || sortKey(a.title).localeCompare(sortKey(b.title));
-  });
-}
-
+import { ListingTable, columnsFor, sortItems, isWishlist } from "../components/listingTable.jsx";
 
 export default function Home() {
   const [items, setItems] = useState([]);
@@ -44,6 +13,7 @@ export default function Home() {
   const [sortState, setSortState] = useState({ key: "title", dir: "asc" });
   const [list, setList] = useState("collection");
   const navigate = useNavigate();
+  const wish = isWishlist(list);
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
@@ -65,7 +35,7 @@ export default function Home() {
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let r = listItems.filter((i) => {
+    const r = listItems.filter((i) => {
       if (type !== "All" && i.type !== type) return false;
       if (!q) return true;
       return (`${i.title} ${i.artist || ""} ${i.year || ""}`).toLowerCase().includes(q);
@@ -91,11 +61,6 @@ export default function Home() {
     setSortState((cur) => ({ key, dir: cur.key === key && cur.dir === "asc" ? "desc" : "asc" }));
   }
 
-  function sortLabel(key) {
-    if (sortState.key !== key) return "";
-    return sortState.dir === "asc" ? " ▲" : " ▼";
-  }
-
   let body;
   if (!isConfigured) {
     body = null;
@@ -109,7 +74,7 @@ export default function Home() {
       </div>
     );
   } else if (!rows.length) {
-    const emptyList = list === "wishlist" ? "Your wish list is empty." : "No listings yet.";
+    const emptyList = wish ? "Your wish list is empty." : "No listings yet.";
     body = (
       <div className="empty">
         <strong>{listItems.length ? `Nothing matches "${query}".` : emptyList}</strong>
@@ -118,39 +83,15 @@ export default function Home() {
     );
   } else {
     body = (
-      <div className="tablewrap">
-        <div className="tableSummary">Shown value {formatMoney(totalValue) || "$0"}</div>
-        <table className="ctable">
-          <thead>
-            <tr>
-              <th className="colhide col-thumb"></th>
-              {columns.map((col) => (
-                <th key={col.key} className={col.className || ""}>
-                  <button type="button" className="sorthead" onClick={() => sortBy(col.key)}>
-                    {col.label}{sortLabel(col.key)}
-                  </button>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((i) => (
-              <tr key={i.id} onClick={() => navigate(`/listing/${i.id}`)} className="crow">
-                <td className="colhide col-thumb"><MediaThumb item={i} /></td>
-                <td className="ctitle">{i.title || <em className="blank">— untitled —</em>}</td>
-                <td className="cby">{i.artist || "—"}</td>
-                <td className="colhide">{i.year || "—"}</td>
-                <td className="colhide">{i.type ? <CategoryPill type={i.type} /> : "—"}</td>
-                <td className="colhide">{i.condition || "—"}</td>
-                <td className="colhide">{i.status || "—"}</td>
-                <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
-                <td className="num cval">{formatMoney(getListingEstimatedValue(i)) || "—"}</td>
-                <td className="num">{i.quantity || 1}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ListingTable
+        rows={rows}
+        columns={columnsFor(list)}
+        sortState={sortState}
+        onSortBy={sortBy}
+        onRowClick={(i) => navigate(`/listing/${i.id}`)}
+        summaryValue={totalValue}
+        wish={wish}
+      />
     );
   }
 
@@ -205,8 +146,8 @@ export default function Home() {
       {isConfigured && (
         <div className="metabar">
           <p className="meta">
-            {rows.length} items · est. value <b>{formatMoney(totalValue) || "$0"}</b> ·{" "}
-            {formatMoney(totalPaid) || "$0"} paid
+            {rows.length} items · est. value <b>{formatMoney(totalValue) || "$0"}</b>
+            {!wish && <> · {formatMoney(totalPaid) || "$0"} paid</>}
           </p>
           <div className="sort">
             <button className="chip" aria-pressed={sortState.key === "title" && sortState.dir === "asc"} onClick={() => setSortState({ key: "title", dir: "asc" })}>A–Z</button>

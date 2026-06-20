@@ -1,41 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { fetchListings, createListing, formatMoney, getListingEstimatedValue, isPriceStale, saveListingValue } from "../data.js";
+import { fetchListings, createListing, getListingEstimatedValue, isPriceStale, saveListingValue } from "../data.js";
 import { isConfigured } from "../supabaseClient.js";
 import { useAuth } from "../auth.jsx";
 import ListingForm from "../components/ListingForm.jsx";
-import { CategoryPill, MediaThumb } from "../components/MediaBits.jsx";
+import { ListingTable, columnsFor, sortItems, isWishlist } from "../components/listingTable.jsx";
 import { valueLookupBatch } from "../values.js";
-
-const sortKey = (s) => (s || "").replace(/^(the|a|an)\s+/i, "").toLowerCase();
-
-const columns = [
-  { key: "title", label: "Title" },
-  { key: "artist", label: "Artists / Studio" },
-  { key: "year", label: "Year", className: "colhide" },
-  { key: "type", label: "Category", className: "colhide" },
-  { key: "condition", label: "Condition", className: "colhide" },
-  { key: "status", label: "Status", className: "colhide" },
-  { key: "used_price", label: "Price Paid", className: "colhide num" },
-  { key: "estimated_value", label: "Est. Value", className: "num" },
-  { key: "quantity", label: "Qty", className: "num" },
-];
-
-function columnValue(item, key) {
-  if (key === "estimated_value") return Number(getListingEstimatedValue(item)) || 0;
-  if (["used_price", "quantity"].includes(key)) return Number(item[key]) || 0;
-  if (key === "title") return sortKey(item.title);
-  return String(item[key] || "").toLowerCase();
-}
-
-function sortItems(items, sortState) {
-  return items.slice().sort((a, b) => {
-    const av = columnValue(a, sortState.key);
-    const bv = columnValue(b, sortState.key);
-    const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
-    return (sortState.dir === "asc" ? cmp : -cmp) || sortKey(a.title).localeCompare(sortKey(b.title));
-  });
-}
 
 function isMissingMarketValueSchemaError(error) {
   return /schema cache|Could not find .* column|column .* does not exist/i.test(error?.message || "");
@@ -104,11 +74,7 @@ export default function Admin() {
     setSortState((cur) => ({ key, dir: cur.key === key && cur.dir === "asc" ? "desc" : "asc" }));
   }
 
-  function sortLabel(key) {
-    if (sortState.key !== key) return "";
-    return sortState.dir === "asc" ? " ▲" : " ▼";
-  }
-
+  const wish = isWishlist(list);
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = items.filter((i) => {
@@ -169,39 +135,15 @@ export default function Admin() {
         <div className="adminlist">
           <div className="meta">{rows.length} of {items.length} listings</div>
           {!!rows.length && (
-            <div className="tablewrap">
-              <div className="tableSummary">Shown value {formatMoney(shownValue) || "$0"}</div>
-              <table className="ctable">
-                <thead>
-                  <tr>
-                    <th className="colhide col-thumb"></th>
-                    {columns.map((col) => (
-                      <th key={col.key} className={col.className || ""}>
-                        <button type="button" className="sorthead" onClick={() => sortBy(col.key)}>
-                          {col.label}{sortLabel(col.key)}
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((i) => (
-                    <tr key={i.id} onClick={() => navigate(`/listing/${i.id}`)} className="crow">
-                      <td className="colhide col-thumb"><MediaThumb item={i} /></td>
-                      <td className="ctitle">{i.title || <em className="blank">— untitled —</em>}</td>
-                      <td className="cby">{i.artist || "—"}</td>
-                      <td className="colhide">{i.year || "—"}</td>
-                      <td className="colhide">{i.type ? <CategoryPill type={i.type} /> : "—"}</td>
-                      <td className="colhide">{i.condition || "—"}</td>
-                      <td className="colhide">{i.status || "—"}</td>
-                      <td className="colhide num">{formatMoney(i.used_price) || "—"}</td>
-                      <td className="num cval">{formatMoney(getListingEstimatedValue(i)) || "—"}</td>
-                      <td className="num">{i.quantity || 1}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ListingTable
+              rows={rows}
+              columns={columnsFor(wish ? "wishlist" : "collection")}
+              sortState={sortState}
+              onSortBy={sortBy}
+              onRowClick={(i) => navigate(`/listing/${i.id}`)}
+              summaryValue={shownValue}
+              wish={wish}
+            />
           )}
           {!rows.length && <div className="empty">No listings match.</div>}
         </div>

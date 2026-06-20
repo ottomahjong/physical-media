@@ -99,7 +99,7 @@ export default function Listing() {
             {item.status && (<><dt>Status</dt><dd>{item.status}</dd></>)}
             {item.quantity > 1 && (<><dt>Quantity</dt><dd>{item.quantity}</dd></>)}
             <dt>Est. Value</dt><dd>{good || "—"}</dd>
-            <dt>Price Paid</dt><dd>{used || "—"}</dd>
+            {(item.list || "collection") !== "wishlist" && (<><dt>Price Paid</dt><dd>{used || "—"}</dd></>)}
           </dl>
 
           <section className="marketvalue">
